@@ -1,3 +1,20 @@
+"""
+ETL 流水线入口模块
+
+本文件实现了 `ETLPipeline` 类，负责将采集到的原始日志通过标准化、解析和批量同步
+写入图数据库（Neo4j）。总体流程：采集 -> 标准化 -> 按事件类型选择解析器 -> 缓冲批量
+写入。关键组件：`LogCollector`（采集）、`LogNormalizer`（标准化）、
+`ProcessParser`/`NetworkParser`（解析），以及 `GraphSync`（写入 Neo4j）。
+
+主要类与方法：
+- `ETLPipeline.__init__`：初始化各模块与配置参数（批量大小、刷新间隔等）。
+- `ETLPipeline.start`：启动采集与处理协程，初始化数据库约束/索引。
+- `_process_loop`：处理主循环，负责标准化、解析、缓冲与统计。
+- `_parse`：根据 `event_category` 分发到进程或网络解析器。
+- `_flush_batch` / `_flush_loop`：批量刷新到 Neo4j。
+- `stop`：停止流水线并清理资源。
+"""
+
 import logging
 import asyncio
 from typing import Optional

@@ -1,6 +1,15 @@
 """
-图算法分析 - 攻击模式匹配
+图算法与模式检测模块
+
+提供一组基于图查询的攻击模式检测方法（例如反弹 Shell、凭据转储、横向移动、WebShell）。
+使用 `GraphSync.execute_query` 执行 Cypher 查询并将结果转换为结构化的检测记录。
+
+主要类与方法：
+- `GraphAlgorithms.find_attack_patterns(pattern_type)`：根据类型分发到具体检测方法。
+- `_find_reverse_shell` / `_find_credential_dump` / `_find_lateral_movement` / `_find_webshell`
+ ：实现具体的 Cypher 查询与结果解析逻辑。
 """
+
 import logging
 from typing import List, Dict, Any
 from app.etl.graph_sync import GraphSync
@@ -46,13 +55,13 @@ class GraphAlgorithms:
                OR shell.command_line CONTAINS 'nc.exe -e'
                OR shell.command_line CONTAINS '/bin/bash -i')
         RETURN 
-            parent.process_id as parent_pid,
+            parent.pid as parent_pid,
             parent.process_name as parent_name,
-            shell.process_id as shell_pid,
+            shell.pid as shell_pid,
             shell.process_name as shell_name,
             shell.command_line as command,
             shell.host_id as host_id,
-            shell.start_time as timestamp
+            shell.first_seen as timestamp
         LIMIT 50
         """
         
@@ -87,11 +96,11 @@ class GraphAlgorithms:
            OR p.command_line CONTAINS 'sekurlsa'
            OR p.command_line CONTAINS 'privilege::debug'
         RETURN 
-            p.process_id as pid,
+            p.pid as pid,
             p.process_name as name,
             p.command_line as command,
             p.host_id as host_id,
-            p.start_time as timestamp
+            p.first_seen as timestamp
         LIMIT 50
         """
         
@@ -124,11 +133,11 @@ class GraphAlgorithms:
            OR (p.process_name = 'powershell.exe' AND p.command_line CONTAINS 'Invoke-Command')
            OR p.command_line CONTAINS 'psexec'
         RETURN 
-            p.process_id as pid,
+            p.pid as pid,
             p.process_name as name,
             p.command_line as command,
             p.host_id as host_id,
-            p.start_time as timestamp
+            p.first_seen as timestamp
         LIMIT 50
         """
         
@@ -160,13 +169,13 @@ class GraphAlgorithms:
         WHERE web.process_name IN ['w3wp.exe', 'httpd', 'apache2', 'nginx', 'tomcat']
           AND shell.process_name IN ['cmd.exe', 'powershell.exe', 'bash', 'sh']
         RETURN 
-            web.process_id as web_pid,
+            web.pid as web_pid,
             web.process_name as web_name,
-            shell.process_id as shell_pid,
+            shell.pid as shell_pid,
             shell.process_name as shell_name,
             shell.command_line as command,
             shell.host_id as host_id,
-            shell.start_time as timestamp
+            shell.first_seen as timestamp
         LIMIT 50
         """
         

@@ -1,6 +1,17 @@
 """
-分析流水线 - 在数据入库后进行攻击分析
+AnalysisPipeline 模块
+
+在数据入库后对图数据进行综合分析，整合攻击链构建、攻击模式检测、MITRE 映射、
+情报增强和归因分析，生成 JSON 和文本摘要报告。是检测结果整理与展示的上游管道。
+
+主要类与方法：
+- `AnalysisPipeline.analyze(time_range_hours)`：执行完整分析流程并返回报告字典。
+- `_save_report(report)`：将分析结果保存为 JSON 与文本摘要，并更新 latest 文件。
+- `quick_analysis`：针对单个可疑指标（IP/进程）执行快速追溯与情报查询。
+
+依赖组件：`ChainBuilder`, `GraphAlgorithms`, `MITREMapper`, `ThreatIntelligence`, `Attribution`。
 """
+
 import logging
 import json
 from datetime import datetime, timedelta

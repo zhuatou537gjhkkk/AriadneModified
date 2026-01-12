@@ -1,3 +1,19 @@
+"""
+GraphSync 模块
+
+负责将解析器生成的图数据写入 Neo4j（ETL 的 Load 阶段）。核心职能：
+- 建立并管理 Neo4j 连接（连接池）；
+- 基于节点唯一 `id` 使用 MERGE 实现去重与更新；
+- 批量写入支持（`batch_sync`）；
+- 提供常用维护操作：创建约束/索引、执行自定义查询、清空数据库等。
+
+主要类与方法：
+- `GraphSync.sync(graph_data)`：同步单条图数据（nodes/edges）到 Neo4j。
+- `_create_or_update_node` / `_create_relationship`：分别创建/更新节点与关系。
+- `_clean_properties`：清理属性字典以便写入（日期格式化、移除 None）。
+- `batch_sync`、`create_constraints`、`create_indexes`、`execute_query`、`get_stats`、`close`。
+"""
+
 import logging
 from typing import Dict, Any, List, Optional
 from neo4j import GraphDatabase, Driver
@@ -98,7 +114,8 @@ class GraphSync:
 
     def _create_or_update_node(self, session, node: Dict):
         """
-        创建或更新节点（基于 MERGE，避免重复）
+        创建或更新节点（基于 MERGE，避免重复）。
+        对于Process节点，实施PID重用检测和属性选择性更新。
         
         Args:
             session: Neo4j session
@@ -126,21 +143,84 @@ class GraphSync:
         clean_props = self._clean_properties(properties)
         clean_props["id"] = node_id  # 确保 id 在属性中
 
-        # MERGE 查询（基于 id 去重）
-        query = f"""
-        MERGE (n:{labels_str} {{id: $id}})
-        SET n += $properties
-        SET n.last_updated = datetime()
-        """
+        # 特殊处理Process节点：PID重用检测 + 属性选择性更新
+        if node_type == "Process":
+            self._create_or_update_process_node(session, node_id, clean_props)
+        else:
+            # 其他节点类型使用标准MERGE逻辑
+            query = f"""
+            MERGE (n:{labels_str} {{id: $id}})
+            SET n += $properties
+            SET n.last_updated = datetime()
+            """
+            try:
+                session.run(query, id=node_id, properties=clean_props)
+            except Exception as e:
+                logger.error(f"创建节点失败 ({node_type}): {str(e)}")
 
+    def _create_or_update_process_node(self, session, node_id: str, clean_props: Dict):
+        """
+        创建或更新Process节点，支持PID重用检测和属性选择性更新
+        
+        核心特性：
+        1. PID重用检测：如果节点的last_seen距当前时间超过lifecycle_timeout，
+           认为是新的PID重用周期，递增lifecycle_version
+        2. 属性选择性更新：ON MATCH时仅更新为null的属性，保留已有的富集数据
+        3. 时间戳维护：更新first_seen(只创建时)和last_seen(每次更新)
+        
+        Args:
+            session: Neo4j session
+            node_id: Process节点的唯一ID
+            clean_props: 清理后的属性字典
+        """
+        # PID重用检测超时（秒）：1小时无活动视为新周期
+        lifecycle_timeout_seconds = 3600
+        current_timestamp = datetime.now()
+        
+        query = f"""
+        MERGE (p:Process {{id: $id}})
+        ON CREATE SET 
+            p += $properties,
+            p.first_seen = $timestamp,
+            p.last_seen = $timestamp,
+            p.lifecycle_version = 1
+        ON MATCH SET
+            p.lifecycle_version = CASE
+                WHEN (p.last_seen + duration({{seconds: {lifecycle_timeout_seconds}}}) < $timestamp)
+                THEN p.lifecycle_version + 1
+                ELSE p.lifecycle_version
+            END,
+            p.process_name = COALESCE(p.process_name, $process_name),
+            p.process_path = COALESCE(p.process_path, $process_path),
+            p.command_line = COALESCE(p.command_line, $command_line),
+            p.working_directory = COALESCE(p.working_directory, $working_directory),
+            p.file_hash = COALESCE(p.file_hash, $file_hash),
+            p.event_id = COALESCE(p.event_id, $event_id),
+            p.last_seen = $timestamp
+        SET p.last_updated = datetime()
+        """
+        
         try:
-            session.run(query, id=node_id, properties=clean_props)
+            session.run(query, 
+                id=node_id, 
+                properties=clean_props,
+                timestamp=current_timestamp.isoformat(),
+                process_name=clean_props.get("process_name"),
+                process_path=clean_props.get("process_path"),
+                command_line=clean_props.get("command_line"),
+                working_directory=clean_props.get("working_directory"),
+                file_hash=clean_props.get("file_hash"),
+                event_id=clean_props.get("event_id")
+            )
         except Exception as e:
-            logger.error(f"创建节点失败 ({node_type}): {str(e)}")
+            logger.error(f"创建/更新Process节点失败: {str(e)}")
 
     def _create_relationship(self, session, edge: Dict):
         """
-        创建关系
+        创建关系，确保边属性包含精确的时间戳用于事件排序
+        
+        对于SPAWNED、INITIATED_CONNECTION等时序关键的关系，
+        确保timestamp属性被正确保存以支持事件顺序分析
         
         Args:
             session: Neo4j session
@@ -149,7 +229,10 @@ class GraphSync:
                     "type": "SPAWNED",
                     "source": "source_node_id",
                     "target": "target_node_id",
-                    "properties": {...}
+                    "properties": {
+                        "timestamp": datetime,  # 必需，用于排序
+                        ...其他属性
+                    }
                 }
         """
         edge_type = edge.get("type")
@@ -164,8 +247,15 @@ class GraphSync:
         # 清理 properties
         clean_props = self._clean_properties(properties)
 
+        # 对于时序关键的关系，确保timestamp存在
+        time_critical_relations = ["SPAWNED", "INITIATED_CONNECTION", "ACCESSED_FILE", "CREATED_FILE", "CONNECTED_TO"]
+        if edge_type in time_critical_relations and "timestamp" not in clean_props:
+            # 如果缺少timestamp，使用当前时间
+            clean_props["timestamp"] = datetime.now().isoformat()
+            logger.warning(f"{edge_type}关系缺少timestamp，使用当前时间: {clean_props['timestamp']}")
+
         # MERGE 关系（避免重复创建）
-        # 注意：根据业务需求，某些关系可能需要多次创建（如多次连接）
+        # 注意：根据业务需求，某些关系可能需要多次创建（如多次连接），此时仍然MERGE但会更新属性
         query = f"""
         MATCH (source {{id: $source_id}})
         MATCH (target {{id: $target_id}})

@@ -1,3 +1,17 @@
+"""
+MITRE 映射模块
+
+将事件或攻击链映射到 MITRE ATT&CK 的战术与技术，提供 ATT&CK 覆盖率统计、
+TTP 提取与 APT 组织画像匹配的简化实现。模块既可基于单条事件进行映射（`map_event_to_mitre`），
+也可聚合图数据库结果生成覆盖矩阵和 TTP 列表。
+
+主要类与方法：
+- `MITREMapper.map_event_to_mitre(event_data)`：根据规则标签与进程/命令行关键词映射战术/技术。
+- `generate_attack_matrix(start_time, end_time)`：基于图数据库结果统计战术/技术覆盖率。
+- `extract_ttps(attack_chain)`：从攻击链提取 TTP 特征。
+- `match_apt_group(ttps)`：基于 TTP 与技术特征匹配 APT 画像（简化示例）。
+"""
+
 import logging
 from typing import List, Dict, Any, Set
 from app.etl.graph_sync import GraphSync
@@ -197,8 +211,8 @@ class MITREMapper:
         query = """
         // 查找所有进程事件
         MATCH (p:Process)
-        WHERE ($start_time IS NULL OR p.start_time >= $start_time)
-          AND ($end_time IS NULL OR p.start_time <= $end_time)
+        WHERE ($start_time IS NULL OR p.first_seen >= $start_time)
+          AND ($end_time IS NULL OR p.first_seen <= $end_time)
         
         // 查找关联的规则标签
         OPTIONAL MATCH (h:Host {host_id: p.host_id})
@@ -206,7 +220,7 @@ class MITREMapper:
         RETURN 
             p.process_name as process,
             p.command_line as command,
-            p.start_time as timestamp
+            p.first_seen as timestamp
         LIMIT 1000
         """
 
@@ -289,51 +303,75 @@ class MITREMapper:
             if not isinstance(chain, dict):
                 continue
             
-            # 处理进程链（父子进程）
-            parent = chain.get("parent", {})
-            child = chain.get("child", {})
-            
-            # 分析父进程
-            if parent:
-                mitre_parent = self.map_event_to_mitre({
-                    "process_name": str(parent.get("name") or ""),
-                    "command_line": str(parent.get("command") or "")
-                })
-                
-                for tactic in mitre_parent.get("tactics", []):
-                    ttps["tactics"].add(tactic["id"])
-                
-                for technique in mitre_parent.get("techniques", []):
-                    ttps["techniques"].add(technique)
-                
-                if mitre_parent.get("techniques"):
-                    ttps["procedures"].append({
-                        "process": parent.get("name"),
-                        "command": parent.get("command"),
-                        "techniques": mitre_parent.get("techniques", []),
-                        "timestamp": parent.get("time")
+            # 支持新的多节点链结构
+            chain_nodes = chain.get("chain", [])
+            if chain_nodes:
+                # 新格式：chain 是节点数组
+                for node in chain_nodes:
+                    mitre_node = self.map_event_to_mitre({
+                        "process_name": str(node.get("name") or ""),
+                        "command_line": str(node.get("command") or "")
                     })
-            
-            # 分析子进程
-            if child:
-                mitre_child = self.map_event_to_mitre({
-                    "process_name": str(child.get("name") or ""),
-                    "command_line": str(child.get("command") or "")
-                })
+                    
+                    for tactic in mitre_node.get("tactics", []):
+                        ttps["tactics"].add(tactic["id"])
+                    
+                    for technique in mitre_node.get("techniques", []):
+                        ttps["techniques"].add(technique)
+                    
+                    if mitre_node.get("techniques"):
+                        ttps["procedures"].append({
+                            "process": node.get("name"),
+                            "command": node.get("command"),
+                            "techniques": mitre_node.get("techniques", []),
+                            "timestamp": node.get("time")
+                        })
+            else:
+                # 向后兼容旧格式（两节点链）
+                parent = chain.get("parent", {})
+                child = chain.get("child", {})
                 
-                for tactic in mitre_child.get("tactics", []):
-                    ttps["tactics"].add(tactic["id"])
-                
-                for technique in mitre_child.get("techniques", []):
-                    ttps["techniques"].add(technique)
-                
-                if mitre_child.get("techniques"):
-                    ttps["procedures"].append({
-                        "process": child.get("name"),
-                        "command": child.get("command"),
-                        "techniques": mitre_child.get("techniques", []),
-                        "timestamp": child.get("time")
+                # 分析父进程
+                if parent:
+                    mitre_parent = self.map_event_to_mitre({
+                        "process_name": str(parent.get("name") or ""),
+                        "command_line": str(parent.get("command") or "")
                     })
+                    
+                    for tactic in mitre_parent.get("tactics", []):
+                        ttps["tactics"].add(tactic["id"])
+                    
+                    for technique in mitre_parent.get("techniques", []):
+                        ttps["techniques"].add(technique)
+                    
+                    if mitre_parent.get("techniques"):
+                        ttps["procedures"].append({
+                            "process": parent.get("name"),
+                            "command": parent.get("command"),
+                            "techniques": mitre_parent.get("techniques", []),
+                            "timestamp": parent.get("time")
+                        })
+                
+                # 分析子进程
+                if child:
+                    mitre_child = self.map_event_to_mitre({
+                        "process_name": str(child.get("name") or ""),
+                        "command_line": str(child.get("command") or "")
+                    })
+                    
+                    for tactic in mitre_child.get("tactics", []):
+                        ttps["tactics"].add(tactic["id"])
+                    
+                    for technique in mitre_child.get("techniques", []):
+                        ttps["techniques"].add(technique)
+                    
+                    if mitre_child.get("techniques"):
+                        ttps["procedures"].append({
+                            "process": child.get("name"),
+                            "command": child.get("command"),
+                            "techniques": mitre_child.get("techniques", []),
+                            "timestamp": child.get("time")
+                        })
 
         return {
             "tactics": list(ttps["tactics"]),
@@ -449,13 +487,15 @@ class MITREMapper:
     def _generate_tactic_timeline(self, ttps: Dict) -> List[Dict]:
         """
         生成战术时间线（Kill Chain）
+        按时间戳排序，处理None值的情况
         """
         procedures = ttps.get("procedures", [])
         
-        # 按时间排序
+        # 按时间排序，使用安全的排序方式处理None值
+        # 将None值排到最后
         timeline = sorted(
             procedures,
-            key=lambda x: x.get("timestamp", "")
+            key=lambda x: (x.get("timestamp") is None, x.get("timestamp", ""))
         )
         
         return timeline

@@ -1,3 +1,19 @@
+"""
+LogCollector 模块
+
+实现 ETL 的 Extract 阶段：实时采集 Wazuh 与 Zeek 的 JSON 日志，统一封装为
+标准消息并提供下游消费接口（`stream()`）。模块特点：文件轮转处理、背压控制、
+解析错误统计和采集性能指标。
+
+主要类与方法：
+- `CollectorMetrics`：采集器性能指标记录与周期性输出。
+- `LogCollector`：主类。
+    - `_tail_file_generator(file_path)`：通用文件尾随生成器（轮转检测）。
+    - `_process_json_line(line, source, sub_type)`：解析 JSON 行并入队。
+    - `collect_wazuh` / `collect_zeek`：具体数据源的采集任务。
+    - `start()` / `stop()` / `stream()`：生命周期控制与下游消费接口。
+"""
+
 import asyncio
 import json
 import os

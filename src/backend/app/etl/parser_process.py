@@ -1,3 +1,20 @@
+"""
+ProcessParser 模块
+
+本模块定义 `ProcessParser`，用于将标准化后的进程与文件事件转换为图模型（节点和关系）。
+职责包括构建进程、用户、文件等节点，以及生成进程间的 SPAWNED、EXECUTED_BY、
+RUNS_IMAGE、CREATED/MODIFIED/DELETED 等关系。模块提供解析入口 `parse()`，以及若干
+内部构建器方法用于生成节点 ID 和节点/关系的标准属性。
+
+主要类与方法：
+- `ProcessParser.parse(normalized_data)`：主入口，分发到 `_parse_process_event` 或
+    `_parse_file_event`，返回 `{nodes, edges, metadata}`。
+- `_parse_process_event`：处理进程创建/衍生事件，产生进程/父进程/用户/文件节点与关系。
+- `_parse_file_event`：处理文件操作事件，产生文件节点并与进程建立 CREATED/MODIFIED/ACCESSED 关系。
+- `_build_*` 系列方法：构建具体节点（Process/User/File）。
+- `_generate_*_id` 系列方法：生成唯一 ID（基于主机、PID、时间戳或路径）。
+"""
+
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
@@ -110,15 +127,24 @@ class ProcessParser:
                 parent_node = {
                     "id": self._generate_process_node_id(
                         data.get("host_id"),
-                        parent_process_id,
-                        data.get("timestamp")
+                        parent_process_id
                     ),
                     "type": "Process",
                     "labels": ["Process"],
                     "properties": {
+                        # 标识信息（统一格式）
                         "pid": parent_process_id,
                         "host_id": data.get("host_id"),
                         "host_name": data.get("host_name"),
+                        # 其他字段暂置为None，等待后续事件补充
+                        "process_name": None,
+                        "process_path": None,
+                        "command_line": None,
+                        "working_directory": None,
+                        "first_seen": data.get("timestamp"),
+                        "last_seen": data.get("timestamp"),
+                        "event_id": None,
+                        "file_hash": None,
                     }
                 }
                 nodes.append(parent_node)
@@ -207,16 +233,25 @@ class ProcessParser:
             process_node = {
                 "id": self._generate_process_node_id(
                     data.get("host_id"),
-                    process_id,
-                    data.get("timestamp")
+                    process_id
                 ),
                 "type": "Process",
                 "labels": ["Process"],
                 "properties": {
+                    # 标识信息（与NetworkParser一致）
                     "pid": process_id,
+                    "host_id": data.get("host_id"),
+                    "host_name": data.get("host_name"),
+                    # 进程详细信息（如果可用）
                     "process_name": data.get("process_name"),
                     "process_path": data.get("process_path"),
-                    "host_id": data.get("host_id"),
+                    "command_line": data.get("command_line"),
+                    "working_directory": data.get("working_directory"),
+                    # 时间信息
+                    "first_seen": data.get("timestamp"),
+                    "last_seen": data.get("timestamp"),
+                    "event_id": data.get("event_id"),
+                    "file_hash": data.get("file_hash"),
                 }
             }
             nodes.append(process_node)
@@ -248,26 +283,30 @@ class ProcessParser:
     # ==========================================
 
     def _build_process_node(self, data: Dict) -> Dict:
-        """构建进程节点"""
+        """构建进程节点（统一格式：ProcessParser与NetworkParser相容）"""
         process_id = data.get("process_id")
         host_id = data.get("host_id")
         timestamp = data.get("timestamp")
 
         return {
-            "id": self._generate_process_node_id(host_id, process_id, timestamp),
+            "id": self._generate_process_node_id(host_id, process_id),
             "type": "Process",
             "labels": ["Process"],
             "properties": {
+                # 标识信息（与NetworkParser一致的基础字段）
                 "pid": process_id,
+                "host_id": host_id,
+                "host_name": data.get("host_name"),
+                # 进程详细信息（ProcessParser富集）
                 "process_name": data.get("process_name"),
                 "process_path": data.get("process_path"),
                 "command_line": data.get("command_line"),
                 "working_directory": data.get("working_directory"),
-                "host_id": host_id,
-                "host_name": data.get("host_name"),
-                "start_time": timestamp,
+                # 时间与事件信息（用于生命周期追踪）
+                "first_seen": timestamp,  # 首次观测此进程
+                "last_seen": timestamp,   # 最后更新时间
                 "event_id": data.get("event_id"),
-                # 用于检测的额外信息
+                # 安全检测相关
                 "file_hash": data.get("file_hash"),
             }
         }
@@ -321,15 +360,16 @@ class ProcessParser:
     def _generate_process_node_id(
         self,
         host_id: str,
-        process_id: int,
-        timestamp: datetime
+        process_id: int
     ) -> str:
         """
-        生成进程节点唯一ID
+        生成进程节点唯一ID（全局去重，无时间戳）
         
-        注意: 进程ID在主机上会被重用，所以需要结合时间戳
+        设计：不包含时间戳，确保同一进程在不同时刻对应同一节点。
+        时间信息保存在节点属性（first_seen/last_seen）和边属性中。
+        注意：如果进程PID被重用，将被视为同一节点（需要额外的生命周期管理）
         """
-        unique_str = f"process_{host_id}_{process_id}_{timestamp.isoformat()}"
+        unique_str = f"process_{host_id}_{process_id}"
         return hashlib.md5(unique_str.encode()).hexdigest()
 
     def _generate_user_node_id(self, user_name: str, host_id: str) -> str:

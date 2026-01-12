@@ -1,3 +1,20 @@
+"""
+LogNormalizer 模块
+
+本模块实现日志标准化与时间对齐逻辑，作为 ETL 的 Transform 阶段核心。功能包括：
+- 将不同数据源（Zeek、Wazuh）映射到统一输出 schema；
+- 时间对齐与校验（统一为 UTC）通过 `TimeAligner` 完成；
+- 清洗源特有字段（例如 Zeek 的 "-" 占位符）；
+- 生成全局事件 ID 以用于图数据库去重；
+- 提供针对 Zeek（网络）与 Wazuh（端点）不同的解析分支。
+
+主要类与方法：
+- `TimeAligner`：时间校验与对齐工具，包含 `validate_timestamp` 和 `align`。
+- `LogNormalizer.normalize(raw_message)`：主入口，返回统一字段的字典或 None。
+- `_normalize_zeek` / `_normalize_wazuh`：分别处理 Zeek 与 Wazuh 的源数据清洗与字段映射。
+- 其它辅助方法：字段清洗、事件 ID 生成和必填字段验证。
+"""
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, Set
@@ -449,7 +466,7 @@ class LogNormalizer:
             normalized["src_port"] = self._safe_int(eventdata.get("sourcePort"))
             normalized["dst_ip"] = eventdata.get("destinationIp")
             normalized["dst_port"] = self._safe_int(eventdata.get("destinationPort"))
-            normalized["protocol"] = eventdata.get("protocol", "").lower()
+            normalized["protocol"] = (eventdata.get("protocol") or "").lower()
             
             # 关联进程信息
             normalized["process_id"] = self._safe_int(eventdata.get("processId"))

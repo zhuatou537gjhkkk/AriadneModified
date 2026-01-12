@@ -1,3 +1,17 @@
+"""
+NetworkParser 模块
+
+本模块定义 `NetworkParser`，用于将标准化后的网络事件（Zeek/Wazuh）解析成图结构。
+职责包括构建 IP、Domain、Host、Process 节点，以及 CONNECTION/HTTP/DNS 对应的
+关系（如 CONNECTED_TO、RESOLVED_TO、HTTP_REQUEST、POINTS_TO 等）。支持对不同
+网络事件类型（conn/dns/http）进行分派处理，并提供构造节点、生成唯一 ID 的工具方法。
+
+主要类与方法：
+- `NetworkParser.parse(normalized_data)`：主入口，根据 `event_type` 分发到特定解析方法。
+- `_parse_connection`、`_parse_dns`、`_parse_http`：分别处理连接、DNS、HTTP 事件。
+- `_build_*` / `_generate_*_id`：构建节点与生成 ID 的辅助方法。
+"""
+
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
@@ -159,16 +173,26 @@ class NetworkParser:
             process_node = {
                 "id": self._generate_process_node_id(
                     data.get("host_id"),
-                    process_id,
-                    data.get("timestamp")
+                    process_id
                 ),
                 "type": "Process",
                 "labels": ["Process"],
                 "properties": {
+                    # 标识信息（统一格式）
                     "pid": process_id,
+                    "host_id": host_id,
+                    "host_name": data.get("host_name"),
+                    # 网络事件中可获取的进程信息
                     "process_name": data.get("process_name"),
                     "process_path": data.get("process_path"),
-                    "host_id": host_id,
+                    # 其他字段暂置为None，等待ProcessParser补充
+                    "command_line": None,
+                    "working_directory": None,
+                    # 时间信息
+                    "first_seen": data.get("timestamp"),
+                    "last_seen": data.get("timestamp"),
+                    "event_id": data.get("event_id"),
+                    "file_hash": None,
                 }
             }
             nodes.append(process_node)
@@ -395,11 +419,10 @@ class NetworkParser:
     def _generate_process_node_id(
         self,
         host_id: str,
-        process_id: int,
-        timestamp: datetime
+        process_id: int
     ) -> str:
-        """生成进程节点唯一ID（与ProcessParser保持一致）"""
-        unique_str = f"process_{host_id}_{process_id}_{timestamp.isoformat()}"
+        """生成进程节点唯一ID（与ProcessParser保持一致，全局去重）"""
+        unique_str = f"process_{host_id}_{process_id}"
         return hashlib.md5(unique_str.encode()).hexdigest()
 
     # ==========================================

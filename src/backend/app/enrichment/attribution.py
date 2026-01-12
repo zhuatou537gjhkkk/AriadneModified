@@ -1,3 +1,16 @@
+"""
+Attribution 模块
+
+实现基于 TTP（战术/技术/过程）特征和情报数据的攻击归因分析。模块会
+提取 TTP、匹配已知 APT 画像、进行基础设施情报增强并计算综合归因评分，
+最终返回结构化的归因报告与建议。
+
+主要类与方法：
+- `Attribution.attribute_attack(attack_chain, iocs)`：主入口，返回归因分析报告。
+- `_analyze_infrastructure` / `_analyze_tactic_preferences` / `_analyze_tools`：用于构建归因证据链的子方法。
+- `_calculate_attribution_score` / `_get_confidence_level`：评分与置信度评估逻辑。
+"""
+
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -187,11 +200,25 @@ class Attribution:
         
         for chain in chains:
             if isinstance(chain, dict):
-                processes = chain.get("chains", [])
+                # 支持新的多节点链结构
+                chain_nodes = chain.get("chain", [])
+                if chain_nodes:
+                    # 新格式：chain 是节点数组
+                    processes = chain_nodes
+                else:
+                    # 向后兼容旧格式：从 parent 和 child 提取
+                    processes = []
+                    parent = chain.get("parent")
+                    child = chain.get("child")
+                    if parent:
+                        processes.append(parent)
+                    if child:
+                        processes.append(child)
+                
                 for proc in processes:
                     if isinstance(proc, dict):
-                        process_name = proc.get("process_name", "").lower()
-                        command = proc.get("command_line", "").lower()
+                        process_name = (proc.get("name") or "").lower()
+                        command = (proc.get("command") or "").lower()
                         
                         # 识别常见攻击工具
                         tool_patterns = {

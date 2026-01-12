@@ -18,7 +18,7 @@ If you are developing a production application, we recommend using TypeScript wi
 # 使用方法
 首先下载pip install npm
 然后重新打开 powershell 运行
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned（可以省略）
 然后运行npm install装依赖包
 装完了 npm run dev会出来一个本机网址
 最后输到浏览器就行了

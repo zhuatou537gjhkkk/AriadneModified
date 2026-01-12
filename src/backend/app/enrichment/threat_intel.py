@@ -1,3 +1,17 @@
+"""
+ThreatIntelligence 模块
+
+提供对 IP、域名与文件哈希的外部情报查询与本地简单分析（如 DGA 检测），并带有
+本地缓存机制以减少重复调用。模块包含示例的第三方 API 调用封装（AbuseIPDB、VirusTotal、AlienVault），
+以及批量增强接口 `batch_enrich`。
+
+主要类与方法：
+- `ThreatIntelligence.enrich_ip(ip)` / `enrich_domain(domain)` / `enrich_file_hash(hash)`：单个指标情报增强。
+- `batch_enrich(indicators)`：对多个 IOC 批量增强。
+- `_query_*`：示例性的第三方 API 查询封装（需要配置 API key）。
+- 本地方法如 `_detect_dga`、缓存管理 `_get_cache` / `_set_cache`。
+"""
+
 import logging
 import requests
 from typing import Dict, Any, Optional, List
