@@ -1,0 +1,75 @@
+{
+    "nodes": [
+        {
+            "id": "192.168.1.5",
+            "name": "192.168.1.5",
+            "category": "IP",
+            "symbolSize": 50,
+            "details": "受害主机 | Agent在线"
+        },
+        {
+            "id": "cmd.exe",
+            "name": "cmd.exe (PID: 882)",
+            "category": "Process",
+            "symbolSize": 30,
+            "details": "Parent: explorer.exe | User: admin"
+        },
+        {
+            "id": "powershell.exe",
+            "name": "powershell.exe",
+            "category": "Process",
+            "symbolSize": 35,
+            "details": "Args: -enc W3... | 内存注入风险"
+        },
+        {
+            "id": "/etc/passwd",
+            "name": "/etc/passwd",
+            "category": "File",
+            "symbolSize": 40,
+            "details": "敏感文件 | 权限: 644"
+        },
+        {
+            "id": "114.114.114.114",
+            "name": "恶意C2 (114.x.x.x)",
+            "category": "External_IP",
+            "symbolSize": 60,
+            "details": "情报命中: APT28 | 威胁评分: 98"
+        }
+    ],
+    "links": [
+        {
+            "source": "192.168.1.5",
+            "target": "cmd.exe",
+            "value": "SPAWNED"
+        },
+        {
+            "source": "cmd.exe",
+            "target": "powershell.exe",
+            "value": "INJECTED"
+        },
+        {
+            "source": "powershell.exe",
+            "target": "/etc/passwd",
+            "value": "READ"
+        },
+        {
+            "source": "powershell.exe",
+            "target": "114.114.114.114",
+            "value": "C2_CONNECT"
+        }
+    ],
+    "categories": [
+        {
+            "name": "IP"
+        },
+        {
+            "name": "Process"
+        },
+        {
+            "name": "File"
+        },
+        {
+            "name": "External_IP"
+        }
+    ]
+}

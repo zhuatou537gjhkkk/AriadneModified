@@ -1,0 +1,111 @@
+/* src/index.css */
+:root {
+  --bg-color: #0b1121;
+  /* 深空蓝背景 */
+  --card-bg: rgba(30, 41, 59, 0.7);
+  /* 半透明卡片背景 */
+  --border-color: rgba(56, 189, 248, 0.2);
+  /* 极细的青色边框 */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-blue: #38bdf8;
+  --accent-red: #f43f5e;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b1121 70%);
+  /* 背景微光 */
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+/* 核心：赛博风格卡片类 */
+.cyber-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(12px);
+  /* 毛玻璃效果 */
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.cyber-card:hover {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+  /* 悬停微光 */
+}
+
+/* 覆盖 AntD 的默认文字颜色 */
+.ant-statistic-title {
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+}
+
+.ant-statistic-content-value {
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-family: 'Courier New', monospace;
+}
+
+.ant-card-head-title {
+  color: var(--accent-blue) !important;
+  font-size: 14px !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ant-layout-header {
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ant-layout-sider {
+  background: #0f172a !important;
+  border-right: 1px solid var(--border-color);
+}
+
+.ant-menu.ant-menu-dark {
+  background: transparent !important;
+}
+
+/* 修复 Ant Design Card body 高度不占满的问题 */
+.cyber-card .ant-card-body {
+  height: calc(100% - 58px);
+  /* 减去标题栏的高度 */
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  /* 图表通常需要贴边展示 */
+}
+
+/* 优化卡片内边距，让内容呼吸感更强但不出界 */
+.cyber-card .ant-card-body {
+  padding: 16px 20px !important;
+  /* 上下16px，左右20px */
+}
+
+/* 强制 Statistic 的数字不换行 */
+.ant-statistic-content {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
