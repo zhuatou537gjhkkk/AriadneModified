@@ -1,55 +1,511 @@
 # src/backend/app/api/endpoints.py
-from fastapi import APIRouter, HTTPException
-from app.core.database import db
+from fastapi import APIRouter, HTTPException, Query
+from datetime import datetime, timedelta
+import logging
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger("FusionTrace.API")
 
 # 假设这里引入了你的业务逻辑模块
-# from app.analysis.graph_algo import find_attack_path
-# from app.etl.collector import get_system_status
+# from app.core.database import db
+from app.analysis.chain_builder import ChainBuilder
+from app.analysis.graph_algo import GraphAlgorithms
+from app.analysis.mitre_mapper import MITREMapper
+from app.enrichment.attribution import Attribution
 
 router = APIRouter()
 
+# 初始化分析模块
+chain_builder = ChainBuilder()
+graph_algo = GraphAlgorithms()
+mitre_mapper = MITREMapper()
+attribution = Attribution()
+
+
+# ==========================================
+# 1. 健康检查与系统状态
+# ==========================================
 
 @router.get("/health")
 async def health_check():
-    """系统健康状态检查 (对应 Dashboard)"""
-    return {"status": "ok", "components": {"neo4j": "connected", "wazuh": "connected"}}
+    """系统健康状态检查"""
+    return {
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "components": {
+            "neo4j": "connected",
+            "wazuh": "connected",
+            "zeek": "connected"
+        }
+    }
 
+
+# ==========================================
+# 2. 态势总览 (Dashboard Summary)
+# ==========================================
 
 @router.get("/dashboard/summary")
 async def get_dashboard_summary():
-    """获取态势感知总览数据"""
-    # 实际开发中，这里应调用 Neo4j 查询统计数据
-    query = """
-    MATCH (n:Alert) 
-    RETURN count(n) as total_alerts
+    """
+    获取态势感知总览数据
+    
+    返回格式（前端严格要求）:
+    {
+        "active_threats": int,      # 当前活跃威胁数
+        "intercepted_today": int,   # 今日拦截告警数
+        "throughput_eps": int,      # 吞吐量 (events per second)
+        "time_sync_offset": int     # 时间同步偏差 (ms)
+    }
     """
     try:
-        with db.get_session() as session:
-            result = session.run(query).single()
-            count = result["total_alerts"] if result else 0
-
+        # 使用分析模块获取攻击链统计
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=24)
+        lateral_movements = chain_builder.find_lateral_movement(time_range_hours=24)
+        data_exfiltrations = chain_builder.find_data_exfiltration()
+        
+        # 计算活跃威胁数 = 攻击链数 + 横向移动数 + 外泄事件数
+        active_threats = (
+            attack_chains.get("total_count", 0) +
+            len(lateral_movements) +
+            len(data_exfiltrations)
+        )
+        
+        # 严格按前端期望格式返回（仅 4 个字段，无额外数据）
         return {
-            "total_alerts": count,
-            "infected_hosts": 3,  # 模拟数据
-            "risk_level": "High"
+            "active_threats": active_threats,
+            "intercepted_today": active_threats * 45,  # 模拟每个威胁产生 45 条告警
+            "throughput_eps": 4600,  # 每秒事件数
+            "time_sync_offset": 12  # 时间偏差 (ms)
         }
     except Exception as e:
+        logger.error(f"获取态势总览失败: {str(e)}")
+        # 异常时返回默认值，保证数据结构一致
+        return {
+            "active_threats": 0,
+            "intercepted_today": 0,
+            "throughput_eps": 0,
+            "time_sync_offset": 0
+        }
+
+
+@router.get("/dashboard/traffic-trend")
+async def get_traffic_trend(hours: int = 1):
+    """
+    获取流量趋势数据（用于 TrafficTrend 组件）
+    
+    返回:
+    - categories: 时间点数组
+    - series: 各数据源的流量趋势
+    """
+    try:
+        # 生成时间序列
+        now = datetime.now()
+        time_points = []
+        for i in range(6, -1, -1):
+            t = now - timedelta(minutes=i*5)
+            time_points.append(t.strftime("%H:%M"))
+        
+        # 模拟流量数据（实际应从数据库查询）
+        return {
+            "categories": time_points,
+            "series": {
+                "zeek": [120, 132, 101, 134, 290, 230, 210],
+                "wazuh": [220, 182, 191, 234, 290, 330, 310],
+                "combined": [340, 314, 292, 368, 580, 560, 520]
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取流量趋势失败: {str(e)}")
         return {"error": str(e)}
 
 
-@router.get("/graph/explore")
-async def explore_graph(node_id: str = None):
+# ==========================================
+# 3. 告警与事件 (Alerts)
+# ==========================================
+
+@router.get("/alerts/latest")
+async def get_latest_alerts(limit: int = Query(10, ge=1, le=100)):
     """
-    溯源画布数据接口
-    前端传入一个节点ID，后端返回其关联的节点和边
+    获取最新告警列表
+    
+    返回:
+    - title: 告警标题
+    - source: 数据源 (zeek/wazuh)
+    - time: 告警时间
+    - level: 告警级别 (low/medium/high/critical)
+    - details: 详细信息
     """
-    # 模拟数据，实际应调用 app/analysis/graph_algo.py
-    return {
-        "nodes": [
-            {"id": "node1", "label": "Process: bash", "type": "process"},
-            {"id": "node2", "label": "IP: 192.168.1.5", "type": "ip"}
-        ],
-        "edges": [
-            {"source": "node1", "target": "node2", "label": "CONNECTED_TO"}
+    try:
+        alerts = []
+        
+        # 获取不同类型的告警
+        reverse_shells = graph_algo.find_attack_patterns("reverse_shell")
+        cred_dumps = graph_algo.find_attack_patterns("credential_dump")
+        lateral_moves = graph_algo.find_attack_patterns("lateral_movement")
+        webshells = graph_algo.find_attack_patterns("webshell")
+        
+        # 组织告警数据
+        all_alerts = [
+            ("反弹 Shell", reverse_shells, "critical"),
+            ("凭据转储", cred_dumps, "critical"),
+            ("横向移动", lateral_moves, "high"),
+            ("WebShell 后门", webshells, "critical"),
         ]
-    }
+        
+        for i, (alert_type, alert_list, level) in enumerate(all_alerts):
+            for j, alert_item in enumerate(alert_list[:limit // 4]):
+                alerts.append({
+                    "title": alert_type,
+                    "source": alert_item.get("host_id", "unknown"),
+                    "time": str(alert_item.get("timestamp", datetime.now().isoformat())).split('T')[1][:8],
+                    "level": level,
+                    "details": alert_item.get("description", ""),
+                    "severity": alert_item.get("severity", "high"),
+                    "clickable": (i == 0 and j == 0)  # 第一个告警可点击
+                })
+        
+        return alerts[:limit]
+    except Exception as e:
+        logger.error(f"获取告警列表失败: {str(e)}")
+        return []
+
+
+# ==========================================
+# 4. 溯源画布 (Investigation Graph)
+# ==========================================
+
+@router.get("/investigation/graph")
+async def get_attack_graph(time_range_hours: int = Query(24, ge=1, le=720)):
+    """
+    获取攻击图谱数据（多跳溯源）
+    
+    返回:
+    - nodes: 节点数组 (IP、进程、文件等)
+    - links: 边数组 (SPAWNED、CONNECTED_TO 等关系)
+    - metadata: 图的元数据
+    """
+    try:
+        # 构建攻击链
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        
+        nodes = []
+        links = []
+        node_ids = set()
+        
+        # 从攻击链提取节点和边
+        chains = attack_chains.get("chains", [])
+        for chain in chains:
+            chain_nodes = chain.get("chain", [])
+            edges = chain.get("edges", [])
+            
+            # 添加进程节点（多跳）
+            for i, node in enumerate(chain_nodes):
+                node_id = f"proc_{node.get('pid')}_{node.get('name')}"
+                if node_id not in node_ids:
+                    nodes.append({
+                        "id": node_id,
+                        "name": f"{node.get('name')} (PID:{node.get('pid')})",  # 前端需要的 name 字段
+                        "label": f"{node.get('name')} (PID:{node.get('pid')})",
+                        "category": "Process",
+                        "details": f"Path: {node.get('path')}\nCmd: {node.get('command')}",
+                        "level": i + 1  # 用于时间回放
+                    })
+                    node_ids.add(node_id)
+                
+                # 添加进程间的边
+                if i > 0:
+                    prev_node = chain_nodes[i - 1]
+                    prev_id = f"proc_{prev_node.get('pid')}_{prev_node.get('name')}"
+                    links.append({
+                        "source": prev_id,
+                        "target": node_id,
+                        "label": "SPAWNED",
+                        "timestamp": edges[i-1].get("timestamp") if i-1 < len(edges) else None,
+                        "value": 2
+                    })
+        
+        # 添加网络连接节点
+        network_conns = attack_chains.get("network_connections", [])
+        for conn in network_conns:
+            path = conn.get("path", [])
+            
+            for node in path:
+                ip = node.get("ip_address")
+                if ip:
+                    node_id = f"ip_{ip}"
+                    if node_id not in node_ids:
+                        nodes.append({
+                            "id": node_id,
+                            "name": f"IP: {ip}",  # 前端需要的 name 字段
+                            "label": f"IP: {ip}",
+                            "category": "External_IP" if not node.get("is_private") else "IP",
+                            "details": f"Type: {'Internal' if node.get('is_private') else 'External'}",
+                            "level": 1
+                        })
+                        node_ids.add(node_id)
+            
+            # 添加网络连接边（多跳）
+            for i in range(len(path) - 1):
+                src_ip = path[i].get("ip_address")
+                dst_ip = path[i + 1].get("ip_address")
+                if src_ip and dst_ip:
+                    links.append({
+                        "source": f"ip_{src_ip}",
+                        "target": f"ip_{dst_ip}",
+                        "label": "CONNECTED_TO",
+                        "port": conn.get("edges")[i].get("dst_port") if i < len(conn.get("edges", [])) else None,
+                        "bytes": conn.get("edges")[i].get("bytes_sent") if i < len(conn.get("edges", [])) else 0,
+                        "value": 2
+                    })
+        
+        return {
+            "nodes": nodes,
+            "links": links,
+            "metadata": {
+                "total_chains": len(chains),
+                "total_nodes": len(nodes),
+                "total_connections": len(links),
+                "time_range_hours": time_range_hours
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取攻击图谱失败: {str(e)}")
+        return {"nodes": [], "links": [], "error": str(e)}
+
+
+@router.get("/investigation/graph/explore")
+async def explore_graph_node(node_id: str):
+    """
+    从某个节点探索关联的其他节点和边
+    （用于前端点击节点时展开关联）
+    """
+    try:
+        # 获取完整图谱，然后过滤包含 node_id 的子图
+        graph_data = await get_attack_graph()
+        
+        # 找出与 node_id 相关的所有节点（一度关联）
+        related_nodes = {node_id}
+        for link in graph_data["links"]:
+            if link["source"] == node_id:
+                related_nodes.add(link["target"])
+            elif link["target"] == node_id:
+                related_nodes.add(link["source"])
+        
+        # 过滤节点和边
+        filtered_nodes = [n for n in graph_data["nodes"] if n["id"] in related_nodes]
+        filtered_links = [
+            l for l in graph_data["links"]
+            if l["source"] in related_nodes and l["target"] in related_nodes
+        ]
+        
+        return {
+            "nodes": filtered_nodes,
+            "links": filtered_links,
+            "center_node_id": node_id
+        }
+    except Exception as e:
+        logger.error(f"节点探索失败: {str(e)}")
+        return {"nodes": [], "links": [], "error": str(e)}
+
+
+# ==========================================
+# 5. ATT&CK 战术分析
+# ==========================================
+
+@router.get("/attack/highlights")
+async def get_attack_highlights(time_range_hours: int = 24):
+    """
+    获取当前检测到的 ATT&CK 战术/技术高亮
+    
+    返回: 当前命中的技术名称数组
+    """
+    try:
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        ttps = mitre_mapper.extract_ttps(attack_chains)
+        
+        # 使用技术 ID 映射到技术名称
+        technique_names = {
+            "T1059.001": "Command and Scripting Interpreter",
+            "T1059.003": "Windows Command Shell",
+            "T1055": "Process Injection",
+            "T1218.010": "Regsvr32",
+            "T1218.011": "Rundll32",
+            "T1003.001": "OS Credential Dumping",
+            "T1021.001": "Remote Desktop Protocol",
+            "T1021.002": "SMB/Windows Admin Shares",
+            "T1021.004": "SSH",
+            "T1071.001": "Application Layer Protocol",
+            "T1505.003": "Web Shell",
+            "T1548.004": "Elevated Execution with Prompt",
+            "T1070.004": "File Deletion",
+            "T1036": "Masquerading"
+        }
+        
+        highlights = []
+        for tech_id in ttps.get("techniques", []):
+            name = technique_names.get(tech_id, tech_id)
+            if name not in highlights:
+                highlights.append(name)
+        
+        return highlights
+    except Exception as e:
+        logger.error(f"获取 ATT&CK 高亮失败: {str(e)}")
+        return []
+
+
+# ==========================================
+# 6. 资产管理 (Assets & Sensors)
+# ==========================================
+
+@router.get("/assets")
+async def get_assets_list():
+    """
+    获取资产和传感器列表
+    
+    返回:
+    - name: 资产名称
+    - ip: IP 地址
+    - role: 角色 (Server/Sensor/Victim)
+    - wazuh: 是否部署 Wazuh 日志采集
+    - zeek: 是否部署网络传感器
+    - status: 连接状态
+    """
+    return [
+        {
+            "key": "1",
+            "name": "FusionTrace-Server",
+            "ip": "192.168.1.2",
+            "role": "Server",
+            "wazuh": True,
+            "zeek": True,
+            "status": "online",
+            "last_seen": datetime.now().isoformat()
+        },
+        {
+            "key": "2",
+            "name": "Zeek-Sensor-01",
+            "ip": "192.168.1.3",
+            "role": "Sensor",
+            "wazuh": True,
+            "zeek": True,
+            "status": "online",
+            "last_seen": datetime.now().isoformat()
+        },
+        {
+            "key": "3",
+            "name": "Victim-Host",
+            "ip": "192.168.1.10",
+            "role": "Victim",
+            "wazuh": True,
+            "zeek": False,
+            "status": "online",
+            "last_seen": datetime.now().isoformat()
+        },
+        {
+            "key": "4",
+            "name": "Attacker-VM",
+            "ip": "192.168.1.20",
+            "role": "Attacker",
+            "wazuh": False,
+            "zeek": False,
+            "status": "suspicious",
+            "last_seen": datetime.now().isoformat()
+        }
+    ]
+
+
+# ==========================================
+# 7. 攻击归因 (Attribution & Threat Intel)
+# ==========================================
+
+@router.get("/attribution/result")
+async def get_attribution_result(time_range_hours: int = 24):
+    """
+    获取攻击归因结果（可能的 APT 组织）
+    
+    返回:
+    - name: APT 组织名称
+    - code: 组织代号
+    - score: 归因置信度 (0-100)
+    - description: 归因依据简述
+    - matched_techniques: 命中的技术列表
+    """
+    try:
+        # 获取攻击链并执行归因分析
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        ttps = mitre_mapper.extract_ttps(attack_chains)
+        apt_matches = mitre_mapper.match_apt_group(ttps)
+        
+        if apt_matches:
+            top_match = apt_matches[0]
+            confidence_score = int(top_match.get("match_score", 0) * 100)
+            return {
+                "name": top_match.get("apt_name", "Unknown"),
+                "code": top_match.get("apt_id", "???"),
+                "confidence": confidence_score,  # 前端需要数字类型的 confidence
+                "country": top_match.get("country", "Unknown"),
+                "matched_techniques": top_match.get("matched_techniques", []),
+                "description": f"基于检测到的 {len(ttps.get('techniques', []))} 项 ATT&CK 技术进行归因",
+                "evidence": [  # 前端需要的证据链数组
+                    {"color": "green", "content": f"检测到 {len(ttps.get('techniques', []))} 项 ATT&CK 技术"},
+                    {"color": "blue", "content": f"归因置信度: {confidence_score}%"},
+                    {"color": "orange", "content": f"疑似来源: {top_match.get('country', 'Unknown')}"},
+                    {"color": "red", "content": f"匹配 APT 组织: {top_match.get('apt_name', 'Unknown')}"}
+                ]
+            }
+        else:
+            return {
+                "name": "Unknown",
+                "code": "???",
+                "confidence": 0,  # 前端需要数字类型
+                "description": "未匹配到已知 APT 组织",
+                "matched_techniques": [],
+                "evidence": [  # 空证据链
+                    {"color": "gray", "content": "暂无足够证据进行归因分析"}
+                ]
+            }
+    except Exception as e:
+        logger.error(f"获取归因结果失败: {str(e)}")
+        return {
+            "name": "Unknown",
+            "code": "???",
+            "confidence": 0,  # 前端需要数字类型
+            "description": f"分析失败: {str(e)}",
+            "evidence": [],
+            "error": str(e)
+        }
+
+
+# ==========================================
+# 8. 分析报告 (Analysis Report)
+# ==========================================
+
+@router.get("/analysis/report")
+async def get_analysis_report(report_type: str = Query("full", pattern="^(full|summary|chains)$")):
+    """
+    获取完整分析报告
+    
+    参数:
+    - report_type: full (完整报告) / summary (摘要) / chains (仅攻击链)
+    """
+    try:
+        from app.analysis.analysis_pipeline import AnalysisPipeline
+        
+        pipeline = AnalysisPipeline()
+        report = pipeline.analyze(time_range_hours=24)
+        
+        if report_type == "summary":
+            return {
+                "analysis_time": report.get("analysis_time"),
+                "attack_chains": report.get("attack_chains", {}).get("total_count", 0),
+                "lateral_movement": len(report.get("lateral_movement", [])),
+                "data_exfiltration": len(report.get("data_exfiltration", [])),
+                "persistence": len(report.get("persistence", []))
+            }
+        elif report_type == "chains":
+            return report.get("attack_chains", {})
+        else:
+            return report
+    except Exception as e:
+        logger.error(f"生成分析报告失败: {str(e)}")
+        return {"error": str(e)}

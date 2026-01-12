@@ -33,7 +33,7 @@ export const getTrafficTrend = async () => {
             categories: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25', '10:30'],
             series: {
                 zeek: [120, 132, 101, 134, 290, 230, 210],
-                auditd: [220, 182, 191, 234, 290, 330, 310]
+                wazuh: [220, 182, 191, 234, 290, 330, 310]
             }
         };
     }
@@ -72,9 +72,9 @@ export const getAssetsList = async () => {
         return await request.get('/assets');
     } catch (e) {
         return [
-            { key: '1', name: 'Node-01 (Analysis)', ip: '192.168.1.2', role: 'Server', auditd: true, zeek: true },
-            { key: '2', name: 'Node-02 (Zeek)', ip: '192.168.1.3', role: 'Sensor', auditd: true, zeek: true },
-            { key: '3', name: 'Node-03 (Agent)', ip: '192.168.1.5', role: 'Victim', auditd: false, zeek: false },
+            { key: '1', name: 'Node-01 (Analysis)', ip: '192.168.1.2', role: 'Server', wazuh: true, zeek: true },
+            { key: '2', name: 'Node-02 (Zeek)', ip: '192.168.1.3', role: 'Sensor', wazuh: true, zeek: true },
+            { key: '3', name: 'Node-03 (Agent)', ip: '192.168.1.5', role: 'Victim', wazuh: false, zeek: false },
         ];
     }
 };

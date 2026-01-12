@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # CORS设置 (允许前端跨域访问)
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     # Neo4j 图数据库配置 (从 .env 读取，若无则使用默认值)
     NEO4J_URI: str = os.getenv("NEO4J_URI", "neo4j://localhost:7687")

@@ -65,8 +65,8 @@ const App = () => {
     const loadAllData = async () => {
       setLoading(true);
       try {
-        // 并行请求所有关键数据
-        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes] = await Promise.all([
+        // 并行请求所有关键数据（修复：Promise.all 的顺序和解构必须一一对应）
+        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes] = await Promise.all([
           getDashboardStats(),
           getTrafficTrend(),
           getLatestAlerts(),
@@ -75,6 +75,8 @@ const App = () => {
           getAttackHighlights(),
           getAttributionResult()
         ]);
+
+        console.log(statsRes);
 
         setStats(statsRes);
         setTrafficData(trafficRes);
@@ -295,7 +297,7 @@ const App = () => {
               { title: '节点名称', dataIndex: 'name', render: (t) => <b style={{ color: '#fff' }}>{t}</b> },
               { title: 'IP 地址', dataIndex: 'ip', render: (t) => <span style={{ fontFamily: 'monospace' }}>{t}</span> },
               { title: '角色', dataIndex: 'role', render: (r) => <Tag color="blue">{r}</Tag> },
-              { title: 'Auditd 采集', key: 'auditd', render: (_, record) => <Switch checkedChildren={<CodeOutlined />} unCheckedChildren={<CodeOutlined />} defaultChecked={record.auditd} /> },
+              { title: 'Wazuh 采集', key: 'wazuh', render: (_, record) => <Switch checkedChildren={<CodeOutlined />} unCheckedChildren={<CodeOutlined />} defaultChecked={record.wazuh} /> },
               { title: 'Zeek 流量', key: 'zeek', render: (_, record) => <Switch checkedChildren={<WifiOutlined />} unCheckedChildren={<WifiOutlined />} defaultChecked={record.zeek} /> },
               { title: '状态', render: (_, r) => <Tag color={r.role === 'Victim' ? 'error' : 'success'}>{r.role === 'Victim' ? 'Compromised' : 'Online'}</Tag> },
             ]} pagination={false} rowClassName={() => 'cyber-table-row'} />

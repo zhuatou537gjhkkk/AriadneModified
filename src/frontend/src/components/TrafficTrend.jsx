@@ -7,19 +7,19 @@ const TrafficTrend = ({ data }) => {
     // 即使 data 是 {} (空对象)，我们也通过解构赋值给它强行加上默认值
     const {
         categories = ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25', '10:30'],
-        series = { zeek: [], auditd: [] }
+        series = { zeek: [], wazuh: [] }
     } = data || {};
 
     // 二重保险：防止 series 存在但内部属性缺失
     const zeekData = series?.zeek || [];
-    const auditdData = series?.auditd || [];
+    const wazuhData = series?.wazuh || [];
     // === 修复核心逻辑 END ===
 
     const option = {
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis' },
         legend: {
-            data: ['Zeek (Network)', 'Auditd (Endpoint)'],
+            data: ['Zeek (Network)', 'Wazuh (Endpoint)'],
             textStyle: { color: '#94a3b8' },
             bottom: 0
         },
@@ -54,7 +54,7 @@ const TrafficTrend = ({ data }) => {
                 data: zeekData
             },
             {
-                name: 'Auditd (Endpoint)',
+                name: 'Wazuh (Endpoint)',
                 type: 'line',
                 smooth: true,
                 showSymbol: false,
@@ -66,7 +66,7 @@ const TrafficTrend = ({ data }) => {
                     }
                 },
                 // 使用处理后的变量
-                data: auditdData
+                data: wazuhData
             }
         ]
     };

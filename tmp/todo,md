@@ -1,0 +1,90 @@
+src\backend\app\analysis\mitre_mapper.py 395 更新APT组织数据（可选，不太重要）
+
+zjt、ztz：前后端对接口，实现联通，前端增加websocket接受后端定时传送的数据
+ssy：网关安装filebeat将数据传输给系统分析核心
+ljn：连通wazuh agent和manager
+ssy、dzh、ljn：上服务器部署，开始测试是否有效，如果部署成功且实验成功，整理使用文档（尝试整合成一键安装脚本），规范代码（删除非必要注释），否则继续修改代码
+
+ly、yst、syn：继续搓PPT和各种报告，整理技术文档
+
+
+# 攻击测试用例清单
+
+TC-01 反弹 Shell（Reverse shell）
+
+目的：验证系统检测反弹 shell 的能力（进程名/命令行与父子关系）。
+安全触发方法：在靶机上启动一个无害的进程，令其命令行包含 "nc"、"4444"、"/bin/bash -i" 或将等效命令行写入测试事件日志供 ETL 读取。
+期望触发：GraphAlgorithms._find_reverse_shell → 字段 pattern_type, command_line, host_id, timestamp。
+备注：优先使用日志/模拟方式以避免真实反连。
+
+
+TC-02 凭据转储（Credential dumping）
+
+目的：验证对 mimikatz / LSASS 访问特征的识别。
+安全触发方法：在测试日志中注入含有 "mimikatz"、"lsass"、"sekurlsa" 等关键词的进程启动事件记录，或运行一个无害占位进程并把其命令行包含上述关键词（不实际访问 LSASS）。
+期望触发：GraphAlgorithms._find_credential_dump → 字段 pattern_type, process, command_line, severity。
+备注：切勿在真实环境执行内存转储。
+
+
+TC-03 横向移动（Lateral movement）
+
+目的：验证内网主机间 SMB/RDP/SSH 等连接检测与路径分析。
+安全触发方法：在图数据库或网络日志中模拟从内网私有 IP 到另一私有 IP 的连接事件，最后跳包含端口 445/3389/22。
+期望触发：ChainBuilder.find_lateral_movement / GraphAlgorithms._find_lateral_movement → 字段 src_ip, dst_ip, last_port, last_service, severity。
+备注：使用日志注入或项目中的 simulate_logs.py。
+
+
+TC-04 WebShell 行为
+
+目的：验证 Web 进程派生 shell 的检测（如 w3wp.exe -> cmd.exe）。
+安全触发方法：在事件数据中注入一条 web 进程 spawn shell 的记录（web 进程名 + shell 进程名），或在日志模拟器中创建相应事件。
+期望触发：GraphAlgorithms._find_webshell → 字段 pattern_type, web_process, shell_process, command_line。
+备注：不要上载或执行恶意 webshell 文件，仅模拟事件。
+
+
+TC-05 数据外泄（Data exfiltration）
+
+目的：验证基于 bytes_sent 的大流量外泄检测（阈值 > ~10MB）。
+安全触发方法：向图或连接日志注入包含 bytes_sent 大于阈值的连接条目，或在日志生成脚本里生成一个“模拟大流量”事件（仅日志，不实际传输）。
+期望触发：ChainBuilder.find_data_exfiltration → 字段 total_bytes_sent, size_mb, src_ip, dst_ip, severity。
+备注：使用日志模拟，避免实际大量流量。
+
+
+TC-06 持久化机制检测（Registry / Scheduled Task）
+
+目的：检测 reg add、schtasks、CurrentVersion\Run 等命令触发持久化检测。
+安全触发方法：在事件/进程记录中写入包含上述关键字的命令行字符串（不实际修改注册表/任务）。
+期望触发：ChainBuilder.find_persistence_mechanisms → 字段 process_name, command_line, mechanism, severity。
+备注：使用被动日志记录或模拟器。
+
+
+TC-07 工具识别（mimikatz/psexec/netcat/meterpreter）
+
+目的：验证 Attribution._analyze_tools 和 MITRE 映射对已知工具字符串的识别。
+安全触发方法：在进程/命令事件里包含工具名称（如 "mimikatz", "psexec", "netcat", "meterpreter"），通过日志注入触发。
+期望触发：attribution 输出 tool_signatures 与 apt_attribution / MITRE 映射项。
+备注：仅字符串级别模拟。
+
+
+TC-08 恶意 IP / 域名 / 文件哈希 情报增强
+
+目的：验证 ThreatIntelligence 的情报整合与 DGA 检测。
+安全触发方法：向情报模块提交已知公开可查询的“测试”IOC或构造高熵 DGA 风格域名（仅用于触发 _detect_dga）。
+期望触发：ThreatIntelligence.enrich_ip/enrich_domain/enrich_file_hash → 字段 is_malicious, threat_score, is_dga。
+备注：第三方 API 需配置 API Key，未配置时仅本地启发式检测生效。
+
+
+TC-09 MITRE 映射与归因
+
+-目的：验证 MITREMapper.map_event_to_mitre、extract_ttps 与 Attribution.attribute_attack 的输出（战术/技术映射与 APT 匹配）。
+-安全触发方法：组合多个前述模拟事件（如包含 PowerShell 执行、mimikatz、外联等），并运行分析流水线以观察 mitre_analysis 与 attribution 报告。
+-期望触发：mitre_analysis 中的 ttps, summary，以及 attribution 的 apt_candidates 与 attribution_summary。
+-备注：可通过 AnalysisPipeline.analyze() 生成报告（需 Neo4j 可用或使用模拟数据注入）。
+
+
+TC-10 日志过滤/低风险告警抑制验证
+
+-目的：验证 normalizer 中的规则级别过滤（例如过滤 level < 3）。
+-安全触发方法：注入不同 rule.level 值的示例事件，检查低级别事件是否被丢弃。
+-期望触发：在 normalizer.py 中看到日志“过滤低级别告警”或相应字段在入库前被忽略。
+-备注：确认系统如何处理噪声与阈值。

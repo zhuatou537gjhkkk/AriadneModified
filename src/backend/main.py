@@ -26,36 +26,21 @@ async def run_etl_pipeline():
     etl_pipeline = ETLPipeline()
     logger.info("[ETL] Starting continuous ETL pipeline monitoring...")
     
-    while True:
-        try:
-            logger.info("[ETL] Running ETL pipeline...")
-            # 执行ETL流程
-            result = etl_pipeline.start()
-            logger.info(f"[ETL] Pipeline completed. Synced: {etl_pipeline.collector.metrics.total_collected} events")
-            
-            # 推送ETL状态给前端
-            await ws_manager.broadcast({
-                "type": "etl_status",
-                "status": "completed",
-                "timestamp": datetime.now().isoformat(),
-                "events_processed": etl_pipeline.collector.metrics.total_collected
-            })
-            
-            # 每次运行后等待一段时间，避免日志重复处理
-            await asyncio.sleep(60)  # 每分钟检查一次
-            
-        except Exception as e:
-            logger.error(f"[ETL] Pipeline error: {str(e)}", exc_info=True)
-            
-            # 推送错误状态
-            await ws_manager.broadcast({
-                "type": "etl_error",
-                "status": "failed",
-                "timestamp": datetime.now().isoformat(),
-                "error": str(e)
-            })
-            
-            await asyncio.sleep(30)  # 出错时等待30秒重试
+    try:
+        logger.info("[ETL] Running ETL pipeline...")
+        # 执行ETL流程 (异步启动 - 此处会一直运行直到出错)
+        await etl_pipeline.start()
+        
+    except Exception as e:
+        logger.error(f"[ETL] Pipeline error: {str(e)}", exc_info=True)
+        
+        # 推送错误状态
+        await ws_manager.broadcast({
+            "type": "etl_error",
+            "status": "failed",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        })
 
 
 async def run_analysis_pipeline():

