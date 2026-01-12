@@ -27,14 +27,20 @@ const items = [
   { key: 'attribution', icon: <SafetyCertificateOutlined />, label: '情报与归因 (Attribution)' },
 ];
 
-// ATT&CK 静态数据保持不变
+// ATT&CK 静态数据 - 与后端 endpoints.py 和 attribution.py 保持一致
 const attackMatrix = {
-  "Initial Access": ["Drive-by Compromise", "Exploit Public Application", "Phishing"],
-  "Execution": ["Command and Scripting Interpreter", "User Execution", "WMI"],
-  "Persistence": ["Boot or Logon Autostart", "Create or Modify System Process"],
-  "Privilege Escalation": ["Process Injection", "Sudo and Sudo Caching"],
-  "Defense Evasion": ["Indicator Removal", "Obfuscated Files", "Masquerading"],
-  "Command and Control": ["Application Layer Protocol", "Encrypted Channel"]
+  "Initial Access": ["Web Shell"],
+  "Execution": ["Command and Scripting Interpreter", "Windows Command Shell"],
+  "Persistence": ["Web Shell"],
+  "Privilege Escalation": ["Process Injection", "Elevated Execution with Prompt"],
+  "Defense Evasion": ["Regsvr32", "Rundll32", "File Deletion", "Masquerading"],
+  "Credential Access": ["OS Credential Dumping"],
+  "Discovery": [],
+  "Lateral Movement": ["Remote Desktop Protocol", "SMB/Windows Admin Shares", "SSH"],
+  "Collection": [],
+  "Exfiltration": [],
+  "Command and Control": ["Application Layer Protocol"],
+  "Impact": []
 };
 const hitTactics = ["Command and Scripting Interpreter", "Process Injection", "Obfuscated Files", "Encrypted Channel"];
 
@@ -266,19 +272,34 @@ const App = () => {
         );
 
       case 'attack':
+        const tactics = Object.keys(attackMatrix);
+        const firstRowTactics = tactics.slice(0, 6);  // 前6个战术
+        const secondRowTactics = tactics.slice(6, 12); // 后6个战术
+        
+        const renderTacticColumn = (tactic) => (
+          <div key={tactic} style={{ minWidth: '180px', flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '10px' }}>
+            <div style={{ color: '#cbd5e1', fontWeight: 'bold', marginBottom: '10px', borderBottom: '2px solid #334155', paddingBottom: '8px' }}>{tactic}</div>
+            {attackMatrix[tactic].length > 0 ? (
+              attackMatrix[tactic].map(tech => (
+                <div key={tech} onClick={() => handleTacticClick(tech)} style={{ padding: '8px', fontSize: '12px', borderRadius: '4px', background: hitTactics.includes(tech) ? 'rgba(244, 63, 94, 0.2)' : 'rgba(30, 41, 59, 0.5)', border: hitTactics.includes(tech) ? '1px solid #f43f5e' : '1px solid #334155', color: hitTactics.includes(tech) ? '#fff' : '#94a3b8', cursor: 'pointer', marginBottom: 4 }}>{tech}</div>
+              ))
+            ) : (
+              <div style={{ padding: '8px', fontSize: '12px', color: '#475569', fontStyle: 'italic' }}>暂无检测技术</div>
+            )}
+          </div>
+        );
+        
         return (
           <Row style={{ height: '100%' }}>
             <Col span={24}>
               <Card title="ATT&CK 动态矩阵" bordered={false} className="cyber-card" style={{ height: '100%', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '20px' }}>
-                  {Object.keys(attackMatrix).map(tactic => (
-                    <div key={tactic} style={{ minWidth: '200px', flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '10px' }}>
-                      <div style={{ color: '#cbd5e1', fontWeight: 'bold', marginBottom: '10px', borderBottom: '2px solid #334155' }}>{tactic}</div>
-                      {attackMatrix[tactic].map(tech => (
-                        <div key={tech} onClick={() => handleTacticClick(tech)} style={{ padding: '8px', fontSize: '12px', borderRadius: '4px', background: hitTactics.includes(tech) ? 'rgba(244, 63, 94, 0.2)' : 'rgba(30, 41, 59, 0.5)', border: hitTactics.includes(tech) ? '1px solid #f43f5e' : '1px solid #334155', color: hitTactics.includes(tech) ? '#fff' : '#94a3b8', cursor: 'pointer', marginBottom: 4 }}>{tech}</div>
-                      ))}
-                    </div>
-                  ))}
+                {/* 第一行：前6个战术 */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  {firstRowTactics.map(renderTacticColumn)}
+                </div>
+                {/* 第二行：后6个战术 */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {secondRowTactics.map(renderTacticColumn)}
                 </div>
               </Card>
             </Col>
