@@ -14,3 +14,11 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+# 使用方法
+首先下载pip install npm
+然后重新打开 powershell 运行
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+然后运行npm install装依赖包
+装完了 npm run dev会出来一个本机网址
+最后输到浏览器就行了
