@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger("FusionTrace.API")
 
 # 假设这里引入了你的业务逻辑模块
-# from app.core.database import db
+from app.core.database import db
 from app.analysis.chain_builder import ChainBuilder
 from app.analysis.graph_algo import GraphAlgorithms
 from app.analysis.mitre_mapper import MITREMapper
@@ -92,31 +92,236 @@ async def get_dashboard_summary():
 async def get_traffic_trend(hours: int = 1):
     """
     获取流量趋势数据（用于 TrafficTrend 组件）
+
+    从数据库查询真实的事件数据，按时间段统计 Zeek（网络）和 Wazuh（端点）的事件数量。
     
+    参数:
+    - hours: 时间范围（小时），默认为1小时
+
     返回:
     - categories: 时间点数组
     - series: 各数据源的流量趋势
     """
     try:
-        # 生成时间序列
+        # 生成时间序列（根据 hours 参数，每 hours*60/7 分钟一个点，共7个点）
         now = datetime.now()
+        interval_minutes = (hours * 60) / 7  # 每个时间桶的分钟数
         time_points = []
-        for i in range(6, -1, -1):
-            t = now - timedelta(minutes=i*5)
-            time_points.append(t.strftime("%H:%M"))
+        time_ranges = []
         
-        # 模拟流量数据（实际应从数据库查询）
-        return {
+        for i in range(6, -1, -1):
+            t = now - timedelta(minutes=i * interval_minutes)
+            time_points.append(t.strftime("%H:%M"))
+            # 为每个时间点创建时间范围
+            start_time = t - timedelta(minutes=interval_minutes / 2)
+            end_time = t + timedelta(minutes=interval_minutes / 2)
+            time_ranges.append((start_time, end_time))
+        
+        # 初始化数据数组，默认为0
+        zeek_data = [0] * 7
+        wazuh_data = [0] * 7
+        
+        # 用于调试：统计数据库中的总数据量
+        zeek_total = 0
+        wazuh_total = 0
+        
+        # 从 Neo4j 查询真实数据
+        session = db.get_session()
+        try:
+            # 先查询数据库中所有节点的数量，验证数据库连接
+            count_query = """
+            MATCH (n) RETURN labels(n)[0] as label, count(n) as cnt
+            """
+            count_result = session.run(count_query)
+            node_counts = {record["label"]: record["cnt"] for record in count_result}
+            print(f"[DEBUG] 数据库节点统计: {node_counts}")
+            
+            # ============ Zeek 数据（网络流量）============
+            # 查询所有 IP、Domain 节点
+            zeek_nodes_query = """
+            MATCH (n)
+            WHERE n:IP OR n:Domain
+            RETURN n.last_updated as last_updated, n.timestamp as timestamp
+            """
+            zeek_nodes_result = session.run(zeek_nodes_query)
+            zeek_nodes_list = list(zeek_nodes_result)
+            print(f"[DEBUG] Zeek 节点数量: {len(zeek_nodes_list)}")
+            
+            for record in zeek_nodes_list:
+                zeek_total += 1
+                ts = record["last_updated"] or record["timestamp"]
+                if ts:
+                    idx = _get_time_bucket_index(ts, time_ranges)
+                    if idx is not None:
+                        zeek_data[idx] += 1
+            
+            # 查询所有 CONNECTED_TO 关系
+            zeek_rels_query = """
+            MATCH ()-[r:CONNECTED_TO]->()
+            RETURN r.timestamp as timestamp, r.last_updated as last_updated
+            """
+            zeek_rels_result = session.run(zeek_rels_query)
+            zeek_rels_list = list(zeek_rels_result)
+            print(f"[DEBUG] CONNECTED_TO 关系数量: {len(zeek_rels_list)}")
+            
+            for record in zeek_rels_list:
+                zeek_total += 1
+                ts = record["timestamp"] or record["last_updated"]
+                if ts:
+                    idx = _get_time_bucket_index(ts, time_ranges)
+                    if idx is not None:
+                        zeek_data[idx] += 1
+            
+            # ============ Wazuh 数据（端点主机）============
+            # 查询所有 Process、File、User 节点
+            wazuh_nodes_query = """
+            MATCH (n)
+            WHERE n:Process OR n:File OR n:User
+            RETURN n.last_updated as last_updated, n.first_seen as first_seen, n.last_seen as last_seen, n.timestamp as timestamp
+            """
+            wazuh_nodes_result = session.run(wazuh_nodes_query)
+            wazuh_nodes_list = list(wazuh_nodes_result)
+            print(f"[DEBUG] Wazuh 节点数量: {len(wazuh_nodes_list)}")
+            
+            # 打印第一条记录的时间戳格式（用于调试）
+            if wazuh_nodes_list:
+                first_record = wazuh_nodes_list[0]
+                print(f"[DEBUG] 第一条 Wazuh 节点时间戳: last_updated={first_record['last_updated']}, type={type(first_record['last_updated'])}")
+            
+            for record in wazuh_nodes_list:
+                wazuh_total += 1
+                ts = record["last_updated"] or record["last_seen"] or record["first_seen"] or record["timestamp"]
+                if ts:
+                    idx = _get_time_bucket_index(ts, time_ranges)
+                    if idx is not None:
+                        wazuh_data[idx] += 1
+            
+            # 查询所有 Wazuh 相关关系
+            wazuh_rels_query = """
+            MATCH ()-[r]->()
+            WHERE type(r) IN ['SPAWNED', 'ACCESSED_FILE', 'CREATED_FILE', 'EXECUTED_BY']
+            RETURN r.timestamp as timestamp, r.last_updated as last_updated
+            """
+            wazuh_rels_result = session.run(wazuh_rels_query)
+            wazuh_rels_list = list(wazuh_rels_result)
+            print(f"[DEBUG] Wazuh 关系数量: {len(wazuh_rels_list)}")
+            
+            for record in wazuh_rels_list:
+                wazuh_total += 1
+                ts = record["timestamp"] or record["last_updated"]
+                if ts:
+                    idx = _get_time_bucket_index(ts, time_ranges)
+                    if idx is not None:
+                        wazuh_data[idx] += 1
+                        
+        finally:
+            session.close()
+        
+        # 计算合并数据
+        combined_data = [z + w for z, w in zip(zeek_data, wazuh_data)]
+        
+        # 调试日志：显示数据库总量和时间范围内的数据量
+        logger.info(f"流量趋势统计 - 数据库总量: Zeek={zeek_total}, Wazuh={wazuh_total}")
+        logger.info(f"流量趋势统计 - 时间范围内: Zeek={zeek_data}, Wazuh={wazuh_data}")
+        logger.info(f"时间范围: {time_ranges[0][0]} ~ {time_ranges[-1][1]}")
+
+        ret_data = {
             "categories": time_points,
             "series": {
-                "zeek": [120, 132, 101, 134, 290, 230, 210],
-                "wazuh": [220, 182, 191, 234, 290, 330, 310],
-                "combined": [340, 314, 292, 368, 580, 560, 520]
+                "zeek": zeek_data,
+                "wazuh": wazuh_data,
+                "combined": combined_data
             }
         }
+
+        print(f"[DEBUG] 数据库总量: Zeek={zeek_total}, Wazuh={wazuh_total}")
+        print(f"[DEBUG] 返回数据: {ret_data}")
+        
+        return ret_data
     except Exception as e:
-        logger.error(f"获取流量趋势失败: {str(e)}")
-        return {"error": str(e)}
+        logger.error(f"获取流量趋势失败: {str(e)}", exc_info=True)
+        # 异常时返回全零数据
+        now = datetime.now()
+        return {
+            "categories": [(now - timedelta(minutes=i*5)).strftime("%H:%M") for i in range(6, -1, -1)],
+            "series": {
+                "zeek": [0, 0, 0, 0, 0, 0, 0],
+                "wazuh": [0, 0, 0, 0, 0, 0, 0],
+                "combined": [0, 0, 0, 0, 0, 0, 0]
+            }
+        }
+
+
+def _get_time_bucket_index(timestamp, time_ranges) -> Optional[int]:
+    """
+    根据时间戳判断属于哪个时间桶
+    
+    Args:
+        timestamp: 时间戳（可以是 datetime 对象、ISO 字符串或 Neo4j datetime）
+        time_ranges: 时间范围列表 [(start, end), ...]，使用本地时间
+    
+    Returns:
+        int: 时间桶索引，如果不在范围内返回 None
+    """
+    try:
+        # 将时间戳转换为本地时间的 datetime 对象
+        ts = None
+        
+        if hasattr(timestamp, 'to_native'):
+            # Neo4j DateTime 对象 - 需要转换为本地时间
+            native = timestamp.to_native()  # 返回 Python datetime（带时区）
+            if hasattr(native, 'astimezone'):
+                # 转换为本地时区，然后移除时区信息
+                ts = native.astimezone().replace(tzinfo=None)
+            else:
+                ts = native
+        elif isinstance(timestamp, str):
+            # ISO 格式字符串
+            from datetime import timezone
+            # 解析带时区的时间字符串
+            ts_str = timestamp.replace('Z', '+00:00')
+            if '+' in ts_str or '-' in ts_str[10:]:  # 有时区信息
+                # 解析时间，包含时区
+                try:
+                    parsed = datetime.fromisoformat(ts_str)
+                    # 转换为本地时间
+                    ts = parsed.astimezone().replace(tzinfo=None)
+                except:
+                    # 降级处理：直接解析不带时区的部分
+                    ts_clean = ts_str.split('+')[0].split('-')[0] if 'T' in ts_str else ts_str
+                    ts = datetime.fromisoformat(ts_clean.split('.')[0])
+            else:
+                ts = datetime.fromisoformat(ts_str.split('.')[0])
+        elif isinstance(timestamp, datetime):
+            if timestamp.tzinfo:
+                # 有时区信息，转换为本地时间
+                ts = timestamp.astimezone().replace(tzinfo=None)
+            else:
+                ts = timestamp
+        else:
+            # 尝试转换为字符串后解析
+            try:
+                ts_str = str(timestamp)
+                return _get_time_bucket_index(ts_str, time_ranges)
+            except:
+                return None
+        
+        if ts is None:
+            return None
+        
+        # 检查时间戳属于哪个时间桶
+        for idx, (start, end) in enumerate(time_ranges):
+            start_naive = start.replace(tzinfo=None) if start.tzinfo else start
+            end_naive = end.replace(tzinfo=None) if end.tzinfo else end
+            if start_naive <= ts < end_naive:
+                return idx
+        
+        # 时间戳不在任何时间桶范围内
+        return None
+    except Exception as e:
+        # 记录错误但不中断程序
+        logger.debug(f"时间戳解析失败: {timestamp}, 类型: {type(timestamp)}, 错误: {e}")
+        return None
 
 
 @router.get("/dashboard/topology")
@@ -446,21 +651,70 @@ async def get_attack_highlights(time_range_hours: int = 24):
         ttps = mitre_mapper.extract_ttps(attack_chains)
         
         # 使用技术 ID 映射到技术名称
+        # 完整映射，覆盖所有 12 个战术阶段相关技术
         technique_names = {
-            "T1059.001": "Command and Scripting Interpreter",
+            # Initial Access (初始访问)
+            "T1505.003": "Web Shell",
+            "T1190": "Exploit Public-Facing Application",
+            "T1566": "Phishing",
+            
+            # Execution (执行)
+            "T1059": "Command and Scripting Interpreter",
+            "T1059.001": "PowerShell",
             "T1059.003": "Windows Command Shell",
+            
+            # Persistence (持久化)
+            "T1053": "Scheduled Task/Job",
+            "T1547": "Boot or Logon Autostart Execution",
+            "T1136": "Create Account",
+            
+            # Privilege Escalation (权限提升)
             "T1055": "Process Injection",
+            "T1548.004": "Elevated Execution with Prompt",
+            "T1134": "Access Token Manipulation",
+            
+            # Defense Evasion (防御规避)
             "T1218.010": "Regsvr32",
             "T1218.011": "Rundll32",
+            "T1070.004": "File Deletion",
+            "T1036": "Masquerading",
+            "T1027": "Obfuscated Files",
+            
+            # Credential Access (凭据访问)
             "T1003.001": "OS Credential Dumping",
+            "T1110": "Brute Force",
+            "T1555": "Credentials from Password Stores",
+            
+            # Discovery (发现)
+            "T1082": "System Information Discovery",
+            "T1083": "File and Directory Discovery",
+            "T1057": "Process Discovery",
+            "T1046": "Network Service Scanning",
+            
+            # Lateral Movement (横向移动)
             "T1021.001": "Remote Desktop Protocol",
             "T1021.002": "SMB/Windows Admin Shares",
             "T1021.004": "SSH",
+            
+            # Collection (收集)
+            "T1005": "Data from Local System",
+            "T1113": "Screen Capture",
+            "T1115": "Clipboard Data",
+            
+            # Exfiltration (数据外泄)
+            "T1041": "Exfiltration Over C2 Channel",
+            "T1048": "Exfiltration Over Alternative Protocol",
+            "T1567": "Exfiltration Over Web Service",
+            
+            # Command and Control (命令与控制)
             "T1071.001": "Application Layer Protocol",
-            "T1505.003": "Web Shell",
-            "T1548.004": "Elevated Execution with Prompt",
-            "T1070.004": "File Deletion",
-            "T1036": "Masquerading"
+            "T1573": "Encrypted Channel",
+            "T1071.004": "DNS Tunneling",
+            
+            # Impact (影响)
+            "T1486": "Data Encrypted for Impact",
+            "T1489": "Service Stop",
+            "T1490": "Inhibit System Recovery"
         }
         
         highlights = []

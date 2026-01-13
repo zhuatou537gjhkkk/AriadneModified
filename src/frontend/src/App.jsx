@@ -28,19 +28,20 @@ const items = [
 ];
 
 // ATT&CK 静态数据 - 与后端 endpoints.py 和 attribution.py 保持一致
+// 技术分类基于题目要求：主机日志、主机行为监控、网络流量分析
 const attackMatrix = {
-  "Initial Access": ["Web Shell"],
-  "Execution": ["Command and Scripting Interpreter", "Windows Command Shell"],
-  "Persistence": ["Web Shell"],
-  "Privilege Escalation": ["Process Injection", "Elevated Execution with Prompt"],
-  "Defense Evasion": ["Regsvr32", "Rundll32", "File Deletion", "Masquerading"],
-  "Credential Access": ["OS Credential Dumping"],
-  "Discovery": [],
+  "Initial Access": ["Web Shell", "Exploit Public-Facing Application", "Phishing"],
+  "Execution": ["Command and Scripting Interpreter", "Windows Command Shell", "PowerShell"],
+  "Persistence": ["Scheduled Task/Job", "Boot or Logon Autostart Execution", "Create Account"],
+  "Privilege Escalation": ["Process Injection", "Elevated Execution with Prompt", "Access Token Manipulation"],
+  "Defense Evasion": ["Regsvr32", "Rundll32", "File Deletion", "Masquerading", "Obfuscated Files"],
+  "Credential Access": ["OS Credential Dumping", "Brute Force", "Credentials from Password Stores"],
+  "Discovery": ["System Information Discovery", "File and Directory Discovery", "Process Discovery", "Network Service Scanning"],
   "Lateral Movement": ["Remote Desktop Protocol", "SMB/Windows Admin Shares", "SSH"],
-  "Collection": [],
-  "Exfiltration": [],
-  "Command and Control": ["Application Layer Protocol"],
-  "Impact": []
+  "Collection": ["Data from Local System", "Screen Capture", "Clipboard Data"],
+  "Exfiltration": ["Exfiltration Over C2 Channel", "Exfiltration Over Alternative Protocol", "Exfiltration Over Web Service"],
+  "Command and Control": ["Application Layer Protocol", "Encrypted Channel", "DNS Tunneling"],
+  "Impact": ["Data Encrypted for Impact", "Service Stop", "Inhibit System Recovery"]
 };
 const hitTactics = ["Command and Scripting Interpreter", "Process Injection", "Obfuscated Files", "Encrypted Channel"];
 
