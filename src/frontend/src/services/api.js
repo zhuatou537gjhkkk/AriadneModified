@@ -39,6 +39,32 @@ export const getTrafficTrend = async () => {
     }
 };
 
+// 获取全网拓扑数据
+export const getTopologyData = async () => {
+    try {
+        return await request.get('/dashboard/topology');
+    } catch (e) {
+        console.log('Topology API Fail, using Mock');
+        // 返回默认的拓扑数据作为兜底
+        return {
+            nodes: [
+                { name: 'Analysis Center', category: 'Server', status: 'online', ip: '192.168.1.1' },
+                { name: 'Zeek Sensor', category: 'Sensor', status: 'online', ip: '192.168.1.3' },
+                { name: 'Victim-01 (Web)', category: 'Endpoint', status: 'online', ip: '192.168.1.10' },
+                { name: 'Victim-02 (DB)', category: 'Endpoint', status: 'online', ip: '192.168.1.11' },
+                { name: 'Victim-03 (Admin)', category: 'Compromised', status: 'compromised', ip: '192.168.1.12' }
+            ],
+            links: [
+                { source: 'Analysis Center', target: 'Zeek Sensor' },
+                { source: 'Zeek Sensor', target: 'Victim-01 (Web)' },
+                { source: 'Zeek Sensor', target: 'Victim-02 (DB)' },
+                { source: 'Zeek Sensor', target: 'Victim-03 (Admin)' },
+                { source: 'Victim-03 (Admin)', target: 'Zeek Sensor', type: 'tunnel' }
+            ]
+        };
+    }
+};
+
 // 获取实时告警
 export const getLatestAlerts = async () => {
     try {

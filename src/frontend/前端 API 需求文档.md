@@ -63,13 +63,23 @@
 
 - **接口地址**: `GET /dashboard/topology`
 
-- **响应示例**:
+- **响应示例**://添加了ip地址
 
   ```JSON
   {
     "nodes": [
-      { "name": "Analysis Center", "category": "Server", "status": "online" },
-      { "name": "Victim-03 (Admin)", "category": "Compromised", "status": "compromised" }
+      { 
+        "name": "Analysis Center", 
+        "category": "Server", 
+        "status": "online",
+        "ip": "192.168.1.1"
+      },
+      { 
+        "name": "Victim-03 (Admin)", 
+        "category": "Compromised", 
+        "status": "compromised",
+        "ip": "192.168.1.12"
+      }
     ],
     "links": [
       { "source": "Analysis Center", "target": "Zeek Sensor" },
@@ -77,6 +87,17 @@
     ]
   }
   ```
+
+- **节点字段说明**:
+  - `name`: 节点名称（必填）
+  - `category`: 节点分类，可选值：`Server` / `Sensor` / `Endpoint` / `Compromised`（必填）
+  - `status`: 节点状态，可选值：`online` / `offline` / `compromised`（必填）
+  - `ip`: IP 地址（可选，用于在拓扑图 tooltip 中显示）
+
+- **链接字段说明**:
+  - `source`: 源节点名称（必填）
+  - `target`: 目标节点名称（必填）
+  - `type`: 链接类型（可选），值为 `tunnel` 时表示隐蔽信道，前端会用红色虚线渲染
 
 ### 2.4 获取实时告警列表
 
