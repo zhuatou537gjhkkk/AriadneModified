@@ -33,7 +33,6 @@ service.interceptors.response.use(
     },
     (error) => {
         // 超出 2xx 范围的状态码都会触发该函数
-        console.log(response);
         const { response } = error;
         if (response) {
             // 请求已发出，但服务器响应的状态码不在 2xx 范围内
