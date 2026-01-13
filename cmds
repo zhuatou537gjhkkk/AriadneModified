@@ -1,10 +1,35 @@
+# 服务端
+
+# 权限
+sudo chmod -R 777 /home/Ariadne/data
+
+# 启动 neo4j
 docker run --restart always --publish=7474:7474 --publish=7687:7687 --env NEO4J_AUTH=neo4j/ariadne_neo4j --volume=/home/Ariadne/data/neo4j_data:/data neo4j
+
+# 启动 wazuh manager
+cd /home/Ariadne/deploy/wazuh_server
+docker-compose up -d
+
+# 启动 logstash_zeek
+docker run -d --name logstash-zeek --restart always -p 5044:5044 --user root -v /home/Ariadne/config/logstash_zeek/:/usr/share/logstash/pipeline/ -v /home/Ariadne/data/zeek/:/home/Ariadne/data/zeek/ logstash:8.10.2
+
+# 代码运行环境配置，在 /home/Ariadne/ 目录下运行
 conda create -n ariadne python=3.12
 conda activate ariadne
 pip install -r requirements.txt
-cd home/Ariadne/src/frontend
 conda install -c conda-forge nodejs
+
+# 启动前端服务
+cd /home/Ariadne/src/frontend
 npm install
 npm run dev
-cd src/backend
+
+# 启动后端服务
+cd /home/Ariadne/src/backend
 python main.py
+
+# 客户端
+
+# 启动 wazuh agent
+
+# 启动 zeek 采集（网关）
