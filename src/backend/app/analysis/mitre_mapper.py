@@ -88,49 +88,153 @@ class MITREMapper:
     }
 
     # 技术ID映射（常见攻击技术）
+    # 覆盖题目要求的：主机日志、主机行为监控、网络流量分析相关技术
     TECHNIQUE_MAPPING = {
-        # T1059: Command and Scripting Interpreter
+        # T1059: Command and Scripting Interpreter (执行)
         "cmd.exe": "T1059.003",
         "powershell": "T1059.001",
         "bash": "T1059.004",
         "python": "T1059.006",
         
-        # T1218: System Binary Proxy Execution
+        # T1218: System Binary Proxy Execution (防御规避)
         "regsvr32": "T1218.010",
         "rundll32": "T1218.011",
         "mshta": "T1218.005",
         
-        # T1055: Process Injection
+        # T1055: Process Injection (权限提升)
         "process_injection": "T1055",
+        "inject": "T1055",
         
-        # T1003: OS Credential Dumping
+        # T1134: Access Token Manipulation (权限提升)
+        "token": "T1134",
+        "impersonate": "T1134",
+        
+        # T1003: OS Credential Dumping (凭据访问)
         "mimikatz": "T1003.001",
         "lsass": "T1003.001",
         "sam": "T1003.002",
+        "procdump": "T1003.001",
         
-        # T1021: Remote Services
+        # T1110: Brute Force (凭据访问)
+        "brute": "T1110",
+        "hydra": "T1110",
+        
+        # T1021: Remote Services (横向移动)
         "rdp": "T1021.001",
         "ssh": "T1021.004",
         "smb": "T1021.002",
         "psexec": "T1021.002",
+        "wmic": "T1021.003",
         
-        # T1071: Application Layer Protocol
+        # T1071: Application Layer Protocol (C2)
         "http": "T1071.001",
         "dns": "T1071.004",
+        "beacon": "T1071.001",
         
-        # T1048: Exfiltration Over Alternative Protocol
+        # T1573: Encrypted Channel (C2)
+        "ssl": "T1573",
+        "tls": "T1573",
+        "encrypted": "T1573",
+        
+        # T1048: Exfiltration Over Alternative Protocol (数据外泄)
         "dns_tunnel": "T1048.003",
+        "icmp_tunnel": "T1048",
+        "exfil": "T1048",
         
-        # T1505: Server Software Component
+        # T1041: Exfiltration Over C2 Channel (数据外泄)
+        "exfiltration": "T1041",
+        
+        # T1505: Server Software Component (持久化)
         "webshell": "T1505.003",
+        ".aspx": "T1505.003",
+        ".jsp": "T1505.003",
+        ".php": "T1505.003",
         
-        # T1053: Scheduled Task/Job
+        # T1190: Exploit Public-Facing Application (初始访问)
+        "exploit": "T1190",
+        "cve-": "T1190",
+        
+        # T1566: Phishing (初始访问)
+        "phishing": "T1566",
+        "spearphish": "T1566",
+        
+        # T1053: Scheduled Task/Job (持久化)
         "cron": "T1053.003",
         "scheduled_task": "T1053.005",
+        "schtasks": "T1053.005",
+        "at.exe": "T1053.002",
         
-        # T1547: Boot or Logon Autostart Execution
+        # T1547: Boot or Logon Autostart Execution (持久化)
         "registry_run": "T1547.001",
         "startup_folder": "T1547.001",
+        "autorun": "T1547.001",
+        
+        # T1136: Create Account (持久化)
+        "net user": "T1136.001",
+        "useradd": "T1136.001",
+        
+        # T1082: System Information Discovery (发现)
+        "systeminfo": "T1082",
+        "uname": "T1082",
+        "hostname": "T1082",
+        
+        # T1083: File and Directory Discovery (发现)
+        "dir ": "T1083",
+        "ls ": "T1083",
+        "find ": "T1083",
+        
+        # T1057: Process Discovery (发现)
+        "tasklist": "T1057",
+        "ps aux": "T1057",
+        "get-process": "T1057",
+        
+        # T1046: Network Service Scanning (发现)
+        "nmap": "T1046",
+        "masscan": "T1046",
+        "portscan": "T1046",
+        "netstat": "T1046",
+        
+        # T1005: Data from Local System (收集)
+        "type ": "T1005",
+        "cat ": "T1005",
+        "copy ": "T1005",
+        
+        # T1113: Screen Capture (收集)
+        "screenshot": "T1113",
+        "screencapture": "T1113",
+        
+        # T1115: Clipboard Data (收集)
+        "clipboard": "T1115",
+        "xclip": "T1115",
+        
+        # T1036: Masquerading (防御规避)
+        "masquerade": "T1036",
+        "rename": "T1036",
+        
+        # T1027: Obfuscated Files (防御规避)
+        "obfuscate": "T1027",
+        "-enc": "T1027",
+        "base64": "T1027",
+        
+        # T1070: Indicator Removal (防御规避)
+        "del ": "T1070.004",
+        "rm ": "T1070.004",
+        "wevtutil": "T1070.001",
+        
+        # T1486: Data Encrypted for Impact (影响)
+        "ransomware": "T1486",
+        "encrypt": "T1486",
+        ".locked": "T1486",
+        
+        # T1489: Service Stop (影响)
+        "sc stop": "T1489",
+        "net stop": "T1489",
+        "systemctl stop": "T1489",
+        
+        # T1490: Inhibit System Recovery (影响)
+        "vssadmin": "T1490",
+        "bcdedit": "T1490",
+        "wbadmin": "T1490",
     }
 
     def __init__(self, graph_sync: GraphSync = None):
