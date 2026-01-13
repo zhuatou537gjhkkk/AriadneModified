@@ -957,61 +957,339 @@ async def get_attack_highlights(time_range_hours: int = 24):
 # 6. 资产管理 (Assets & Sensors)
 # ==========================================
 
+# 默认资产数据（用于初始化数据库）
+DEFAULT_ASSETS = [
+    {
+        "key": "1",
+        "name": "FusionTrace-Server",
+        "ip": "192.168.1.2",
+        "role": "Server",
+        "wazuh": True,
+        "zeek": True,
+        "status": "online"
+    },
+    {
+        "key": "2",
+        "name": "Zeek-Sensor-01",
+        "ip": "192.168.1.3",
+        "role": "Sensor",
+        "wazuh": True,
+        "zeek": True,
+        "status": "online"
+    },
+    {
+        "key": "3",
+        "name": "Victim-Host",
+        "ip": "192.168.1.10",
+        "role": "Victim",
+        "wazuh": True,
+        "zeek": False,
+        "status": "online"
+    },
+    {
+        "key": "4",
+        "name": "Attacker-VM",
+        "ip": "192.168.1.20",
+        "role": "Attacker",
+        "wazuh": False,
+        "zeek": False,
+        "status": "suspicious"
+    }
+]
+
+
+async def init_default_assets():
+    """
+    初始化默认资产数据到 Neo4j
+    如果数据库中没有 Asset 节点，则创建默认资产
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 检查是否已存在 Asset 节点
+            check_query = "MATCH (a:Asset) RETURN count(a) as count"
+            result = session.run(check_query)
+            record = result.single()
+            
+            if record and record["count"] > 0:
+                logger.info(f"数据库中已存在 {record['count']} 个资产，跳过初始化")
+                return
+            
+            # 创建 Asset 节点约束（如果不存在）
+            try:
+                session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.key IS UNIQUE")
+                logger.info("Asset 节点约束创建成功")
+            except Exception as e:
+                logger.warning(f"创建 Asset 约束失败（可能已存在）: {str(e)}")
+            
+            # 插入默认资产
+            for asset in DEFAULT_ASSETS:
+                create_query = """
+                CREATE (a:Asset {
+                    key: $key,
+                    name: $name,
+                    ip: $ip,
+                    role: $role,
+                    wazuh: $wazuh,
+                    zeek: $zeek,
+                    status: $status,
+                    last_seen: datetime(),
+                    created_at: datetime()
+                })
+                """
+                session.run(create_query, **asset)
+            
+            logger.info(f"成功初始化 {len(DEFAULT_ASSETS)} 个默认资产")
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"初始化默认资产失败: {str(e)}")
+
+
 @router.get("/assets")
 async def get_assets_list():
     """
-    获取资产和传感器列表
+    获取资产和传感器列表（从 Neo4j 数据库查询）
     
     返回:
+    - key: 资产唯一标识
     - name: 资产名称
     - ip: IP 地址
-    - role: 角色 (Server/Sensor/Victim)
+    - role: 角色 (Server/Sensor/Victim/Attacker)
     - wazuh: 是否部署 Wazuh 日志采集
     - zeek: 是否部署网络传感器
-    - status: 连接状态
+    - status: 连接状态 (online/offline/suspicious/compromised)
+    - last_seen: 最后在线时间
     """
-    return [
-        {
-            "key": "1",
-            "name": "FusionTrace-Server",
-            "ip": "192.168.1.2",
-            "role": "Server",
-            "wazuh": True,
-            "zeek": True,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "2",
-            "name": "Zeek-Sensor-01",
-            "ip": "192.168.1.3",
-            "role": "Sensor",
-            "wazuh": True,
-            "zeek": True,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "3",
-            "name": "Victim-Host",
-            "ip": "192.168.1.10",
-            "role": "Victim",
-            "wazuh": True,
-            "zeek": False,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "4",
-            "name": "Attacker-VM",
-            "ip": "192.168.1.20",
-            "role": "Attacker",
-            "wazuh": False,
-            "zeek": False,
-            "status": "suspicious",
-            "last_seen": datetime.now().isoformat()
-        }
-    ]
+    try:
+        session = db.get_session()
+        try:
+            query = """
+            MATCH (a:Asset)
+            RETURN a.key as key,
+                   a.name as name,
+                   a.ip as ip,
+                   a.role as role,
+                   a.wazuh as wazuh,
+                   a.zeek as zeek,
+                   a.status as status,
+                   a.last_seen as last_seen
+            ORDER BY a.key
+            """
+            result = session.run(query)
+            
+            assets = []
+            for record in result:
+                last_seen = record["last_seen"]
+                # 处理 Neo4j datetime 类型
+                if hasattr(last_seen, 'to_native'):
+                    last_seen = last_seen.to_native().isoformat()
+                elif last_seen is None:
+                    last_seen = datetime.now().isoformat()
+                
+                assets.append({
+                    "key": record["key"],
+                    "name": record["name"],
+                    "ip": record["ip"],
+                    "role": record["role"],
+                    "wazuh": record["wazuh"],
+                    "zeek": record["zeek"],
+                    "status": record["status"],
+                    "last_seen": last_seen
+                })
+            
+            # 如果数据库中没有资产，返回默认值
+            if not assets:
+                logger.warning("数据库中没有资产数据，返回默认资产列表")
+                return [
+                    {**asset, "last_seen": datetime.now().isoformat()}
+                    for asset in DEFAULT_ASSETS
+                ]
+            
+            return assets
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"获取资产列表失败: {str(e)}")
+        # 异常时返回默认值
+        return [
+            {**asset, "last_seen": datetime.now().isoformat()}
+            for asset in DEFAULT_ASSETS
+        ]
+
+
+@router.post("/assets")
+async def create_asset(asset: Dict[str, Any]):
+    """
+    创建新资产
+    
+    请求体:
+    - name: 资产名称（必填）
+    - ip: IP 地址（必填）
+    - role: 角色 (Server/Sensor/Victim/Attacker)（必填）
+    - wazuh: 是否部署 Wazuh（可选，默认 False）
+    - zeek: 是否部署 Zeek（可选，默认 False）
+    - status: 状态（可选，默认 online）
+    """
+    try:
+        # 验证必填字段
+        required_fields = ["name", "ip", "role"]
+        for field in required_fields:
+            if field not in asset:
+                raise HTTPException(status_code=400, detail=f"缺少必填字段: {field}")
+        
+        session = db.get_session()
+        try:
+            # 生成新的 key（查询最大 key 值）
+            max_key_query = "MATCH (a:Asset) RETURN max(toInteger(a.key)) as max_key"
+            result = session.run(max_key_query)
+            record = result.single()
+            new_key = str((record["max_key"] or 0) + 1)
+            
+            # 创建资产
+            create_query = """
+            CREATE (a:Asset {
+                key: $key,
+                name: $name,
+                ip: $ip,
+                role: $role,
+                wazuh: $wazuh,
+                zeek: $zeek,
+                status: $status,
+                last_seen: datetime(),
+                created_at: datetime()
+            })
+            RETURN a.key as key
+            """
+            
+            result = session.run(
+                create_query,
+                key=new_key,
+                name=asset["name"],
+                ip=asset["ip"],
+                role=asset["role"],
+                wazuh=asset.get("wazuh", False),
+                zeek=asset.get("zeek", False),
+                status=asset.get("status", "online")
+            )
+            
+            record = result.single()
+            logger.info(f"创建资产成功: {asset['name']} (key: {new_key})")
+            
+            return {"success": True, "key": new_key, "message": "资产创建成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"创建资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"创建资产失败: {str(e)}")
+
+
+@router.put("/assets/{asset_key}")
+async def update_asset(asset_key: str, asset: Dict[str, Any]):
+    """
+    更新资产信息
+    
+    路径参数:
+    - asset_key: 资产唯一标识
+    
+    请求体（所有字段可选）:
+    - name: 资产名称
+    - ip: IP 地址
+    - role: 角色
+    - wazuh: 是否部署 Wazuh
+    - zeek: 是否部署 Zeek
+    - status: 状态
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 构建动态更新语句
+            set_clauses = []
+            params = {"key": asset_key}
+            
+            field_mapping = {
+                "name": "a.name = $name",
+                "ip": "a.ip = $ip",
+                "role": "a.role = $role",
+                "wazuh": "a.wazuh = $wazuh",
+                "zeek": "a.zeek = $zeek",
+                "status": "a.status = $status"
+            }
+            
+            for field, clause in field_mapping.items():
+                if field in asset:
+                    set_clauses.append(clause)
+                    params[field] = asset[field]
+            
+            if not set_clauses:
+                raise HTTPException(status_code=400, detail="没有提供需要更新的字段")
+            
+            # 添加 last_seen 更新
+            set_clauses.append("a.last_seen = datetime()")
+            
+            update_query = f"""
+            MATCH (a:Asset {{key: $key}})
+            SET {", ".join(set_clauses)}
+            RETURN a.key as key
+            """
+            
+            result = session.run(update_query, **params)
+            record = result.single()
+            
+            if not record:
+                raise HTTPException(status_code=404, detail=f"未找到资产: {asset_key}")
+            
+            logger.info(f"更新资产成功: key={asset_key}")
+            return {"success": True, "message": "资产更新成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"更新资产失败: {str(e)}")
+
+
+@router.delete("/assets/{asset_key}")
+async def delete_asset(asset_key: str):
+    """
+    删除资产
+    
+    路径参数:
+    - asset_key: 资产唯一标识
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 删除资产
+            delete_query = """
+            MATCH (a:Asset {key: $key})
+            DELETE a
+            RETURN count(*) as deleted
+            """
+            
+            result = session.run(delete_query, key=asset_key)
+            record = result.single()
+            
+            if record["deleted"] == 0:
+                raise HTTPException(status_code=404, detail=f"未找到资产: {asset_key}")
+            
+            logger.info(f"删除资产成功: key={asset_key}")
+            return {"success": True, "message": "资产删除成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除资产失败: {str(e)}")
 
 
 # ==========================================

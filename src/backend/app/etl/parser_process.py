@@ -136,6 +136,7 @@ class ProcessParser:
                         "pid": parent_process_id,
                         "host_id": data.get("host_id"),
                         "host_name": data.get("host_name"),
+                        "host_ip": data.get("host_ip"),  # 添加主机IP用于资产发现
                         # 其他字段暂置为None，等待后续事件补充
                         "process_name": None,
                         "process_path": None,
@@ -242,6 +243,7 @@ class ProcessParser:
                     "pid": process_id,
                     "host_id": data.get("host_id"),
                     "host_name": data.get("host_name"),
+                    "host_ip": data.get("host_ip"),  # 添加主机IP用于资产发现
                     # 进程详细信息（如果可用）
                     "process_name": data.get("process_name"),
                     "process_path": data.get("process_path"),
@@ -297,6 +299,7 @@ class ProcessParser:
                 "pid": process_id,
                 "host_id": host_id,
                 "host_name": data.get("host_name"),
+                "host_ip": data.get("host_ip"),  # 添加主机IP用于资产发现
                 # 进程详细信息（ProcessParser富集）
                 "process_name": data.get("process_name"),
                 "process_path": data.get("process_path"),

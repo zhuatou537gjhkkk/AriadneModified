@@ -422,7 +422,16 @@ const App = () => {
               { title: '角色', dataIndex: 'role', render: (r) => <Tag color="blue">{r}</Tag> },
               { title: 'Wazuh 采集', key: 'wazuh', render: (_, record) => <Switch checkedChildren={<CodeOutlined />} unCheckedChildren={<CodeOutlined />} defaultChecked={record.wazuh} /> },
               { title: 'Zeek 流量', key: 'zeek', render: (_, record) => <Switch checkedChildren={<WifiOutlined />} unCheckedChildren={<WifiOutlined />} defaultChecked={record.zeek} /> },
-              { title: '状态', render: (_, r) => <Tag color={r.role === 'Victim' ? 'error' : 'success'}>{r.role === 'Victim' ? 'Compromised' : 'Online'}</Tag> },
+              { title: '状态', dataIndex: 'status', render: (status) => {
+                const statusConfig = {
+                  online: { color: 'success', text: 'Online' },
+                  offline: { color: 'default', text: 'Offline' },
+                  suspicious: { color: 'warning', text: 'Suspicious' },
+                  compromised: { color: 'error', text: 'Compromised' }
+                };
+                const config = statusConfig[status?.toLowerCase()] || statusConfig.online;
+                return <Tag color={config.color}>{config.text}</Tag>;
+              }},
             ]} pagination={false} rowClassName={() => 'cyber-table-row'} />
           </Card>
         );
