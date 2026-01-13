@@ -16,7 +16,7 @@ import EntropyChart from './components/EntropyChart';
 import TopologyGraph from './components/TopologyGraph';
 
 // 引入 API 服务
-import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult } from './services/api';
+import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getChainsList, getSingleChainGraph } from './services/api';
 
 const { Header, Content, Sider } = Layout;
 
@@ -61,6 +61,10 @@ const App = () => {
   const [hitTactics, setHitTactics] = useState([]);
   const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', score: 0 });
   // const [storyline, setStoryline] = useState([]); // 攻击叙事线功能已禁用
+  
+  // 【新增】攻击链相关状态
+  const [chainsList, setChainsList] = useState([]);  // 攻击链列表
+  const [selectedChainId, setSelectedChainId] = useState(null);  // 当前选中的攻击链
 
   // === 2. 交互状态 ===
   const [selectedNode, setSelectedNode] = useState(null);
@@ -75,16 +79,15 @@ const App = () => {
     const loadAllData = async () => {
       setLoading(true);
       try {
-        // 并行请求所有关键数据（修复：Promise.all 的顺序和解构必须一一对应）
-        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes] = await Promise.all([
+        // 并行请求所有关键数据
+        const [statsRes, trafficRes, alertsRes, chainsListRes, assetsRes, attackRes, attrRes] = await Promise.all([
           getDashboardStats(),
           getTrafficTrend(),
           getLatestAlerts(),
-          getAttackGraph(),
+          getChainsList(),  // ← 新增：获取攻击链列表
           getAssetsList(),
           getAttackHighlights(),
           getAttributionResult(),
-          // getAttackStoryline() // 攻击叙事线功能已禁用
         ]);
 
         console.log(statsRes);
@@ -92,11 +95,20 @@ const App = () => {
         setStats(statsRes);
         setTrafficData(trafficRes);
         setAlertList(alertsRes);
-        setGraphData(graphRes);
+        setChainsList(chainsListRes.chains || []);  // ← 存储攻击链列表
         setAssetData(assetsRes);
         setHitTactics(attackRes);
         setAttribution(attrRes);
-        // setStoryline(storylineRes); // 攻击叙事线功能已禁用
+
+        // 【新增】默认加载第一个攻击链的图谱
+        if (chainsListRes.chains && chainsListRes.chains.length > 0) {
+          const firstChain = chainsListRes.chains[0];
+          setSelectedChainId(firstChain.id);
+          const graphRes = await getSingleChainGraph(firstChain.id);
+          setGraphData(graphRes);
+        } else {
+          setGraphData({ nodes: [], links: [] });
+        }
 
         // message.success("实时数据已同步");
       } catch (error) {
@@ -155,9 +167,17 @@ const App = () => {
           getLatestAlerts().then(setAlertList);
           getAttributionResult().then(setAttribution);
           // getAttackStoryline().then(setStoryline); // 攻击叙事线功能已禁用
-          getAttackGraph().then(setGraphData);
           getAssetsList().then(setAssetData);
           getTrafficTrend().then(setTrafficData);
+          
+          // 【新增】重新加载攻击链列表并刷新当前选中的链
+          getChainsList().then(newChainsList => {
+            setChainsList(newChainsList.chains || []);
+            // 如果有选中的链，刷新其图谱
+            if (selectedChainId) {
+              getSingleChainGraph(selectedChainId).then(setGraphData);
+            }
+          });
 
           break;
 
@@ -208,6 +228,23 @@ const App = () => {
     setCurrentView(e.key);
     setSelectedNode(null);
     setHighlightPath([]);
+  };
+
+  // 【新增】处理攻击链点击事件
+  const handleChainClick = async (chainId) => {
+    if (selectedChainId === chainId) return; // 已经选中，不重复加载
+    
+    setSelectedChainId(chainId);
+    setSelectedNode(null);  // 清除节点选择
+    setHighlightPath([]);   // 清除高亮路径
+    
+    try {
+      const graphRes = await getSingleChainGraph(chainId);
+      setGraphData(graphRes);
+    } catch (error) {
+      console.error("Failed to load chain graph:", error);
+      message.error("加载攻击链失败");
+    }
   };
 
   const handleAlertClick = (item) => {
@@ -316,55 +353,110 @@ const App = () => {
                 bordered={false} className="cyber-card" bodyStyle={{ padding: 0 }} style={{ marginBottom: '16px' }}
               >
                 <div style={{ height: 600, width: '100%', position: 'relative' }}>
-                  {filteredGraphData.nodes.length > 0 ? (
-                    <AttackGraph onNodeClick={setSelectedNode} highlightNodes={highlightPath} graphData={filteredGraphData} />
+                  {graphData.nodes && graphData.nodes.length > 0 ? (
+                    <AttackGraph onNodeClick={setSelectedNode} highlightNodes={highlightPath} graphData={graphData} />
                   ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}><Empty description="暂无数据" /></div>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}>
+                      <Empty description="请从右侧选择攻击链" />
+                    </div>
                   )}
                 </div>
                 <div style={{ padding: '20px 24px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid #1e293b' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>时序回放轴 (TIMELINE REPLAY)</div>
-                  <Slider min={0} max={4} value={timeStep} onChange={setTimeStep}
-                    marks={{ 0: { style: { color: '#cbd5e1' }, label: '10:00:00' }, 4: { style: { color: '#f43f5e' }, label: 'C2 Connect' } }}
-                  />
+                  <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>
+                    当前攻击链: {selectedChainId ? chainsList.find(c => c.id === selectedChainId)?.name : '未选择'}
+                  </div>
                 </div>
               </Card>
-              {/* 攻击叙事线功能已禁用
-              <Card title="攻击叙事线 (STORYLINE)" bordered={false} className="cyber-card">
-                <Timeline mode="left" style={{ marginTop: '20px' }}>
-                  {storyline && storyline.length > 0 ? (
-                    storyline.map((item, index) => (
-                      <Timeline.Item
-                        key={index}
-                        color={item.type === 'danger' ? 'red' : (item.type === 'warning' ? 'orange' : 'blue')}
-                        label={<span style={{ color: '#64748b' }}>{item.time}</span>}
-                      >
-                        <span style={{ color: '#cbd5e1' }}>
-                          {item.content}
-                        </span>
-                      </Timeline.Item>
-                    ))
-                  ) : (
-                    <Timeline.Item>暂无数据</Timeline.Item>
-                  )}
-                </Timeline>
-              </Card>
-              */}
             </Col>
+            
+            {/* 【修改】右侧面板：从节点详情改为攻击链列表 */}
             <Col span={6}>
-              <Card title="节点详情 (DETAILS)" bordered={false} className="cyber-card" style={{ height: '100%' }}>
-                {selectedNode ? (
-                  <div style={{ color: '#94a3b8', animation: 'fadeIn 0.3s' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                      <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>{selectedNode.category}</Tag>
-                      <h3 style={{ color: '#fff', margin: '10px 0' }}>{selectedNode.name}</h3>
-                    </div>
-                    <Descriptions column={1} size="small" labelStyle={{ color: '#94a3b8' }} contentStyle={{ color: '#fff' }}>
-                      <Descriptions.Item label="ID">{selectedNode.id}</Descriptions.Item>
-                      <Descriptions.Item label="Info">{selectedNode.details}</Descriptions.Item>
-                    </Descriptions>
-                  </div>
-                ) : (<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span style={{ color: '#64748b' }}>点击节点查看详情...</span>} />)}
+              <Card 
+                title="攻击链列表 (ATTACK CHAINS)" 
+                bordered={false} 
+                className="cyber-card" 
+                style={{ height: '100%', maxHeight: '680px' }}
+                bodyStyle={{ padding: '8px', overflowY: 'auto', maxHeight: '600px' }}
+              >
+                {chainsList.length > 0 ? (
+                  <List
+                    size="small"
+                    dataSource={chainsList}
+                    renderItem={chain => (
+                      <List.Item
+                        key={chain.id}
+                        onClick={() => handleChainClick(chain.id)}
+                        style={{
+                          cursor: 'pointer',
+                          borderLeft: selectedChainId === chain.id ? '3px solid #f43f5e' : '3px solid transparent',
+                          backgroundColor: selectedChainId === chain.id ? 'rgba(244, 63, 94, 0.15)' : 'transparent',
+                          padding: '10px 12px',
+                          marginBottom: '6px',
+                          borderRadius: '4px',
+                          transition: 'all 0.3s',
+                          border: '1px solid rgba(255,255,255,0.05)'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedChainId !== chain.id) {
+                            e.currentTarget.style.backgroundColor = 'rgba(56, 189, 248, 0.1)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedChainId !== chain.id) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar 
+                              size="small"
+                              style={{ 
+                                backgroundColor: chain.severity === 'high' ? '#f43f5e' : chain.severity === 'medium' ? '#fbbf24' : '#22d3ee',
+                                fontWeight: 'bold',
+                                fontSize: '11px'
+                              }}
+                            >
+                              {chain.length}
+                            </Avatar>
+                          }
+                          title={
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{ color: '#fff', fontSize: '12px', fontWeight: selectedChainId === chain.id ? 'bold' : 'normal' }}>
+                                {chain.name}
+                              </span>
+                              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                <Tag 
+                                  color={chain.severity === 'high' ? 'red' : chain.severity === 'medium' ? 'orange' : 'blue'}
+                                  style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
+                                >
+                                  {chain.severity.toUpperCase()}
+                                </Tag>
+                                <Tag 
+                                  color={chain.type === 'process_tree' ? 'purple' : 'cyan'}
+                                  style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
+                                >
+                                  {chain.type === 'process_tree' ? '进程链' : '网络链'}
+                                </Tag>
+                              </div>
+                            </div>
+                          }
+                          description={
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
+                              <div>{chain.host_id}</div>
+                              <div style={{ marginTop: '2px' }}>{chain.description}</div>
+                            </div>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                ) : (
+                  <Empty 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                    description={<span style={{ color: '#64748b' }}>暂无攻击链数据</span>} 
+                  />
+                )}
               </Card>
             </Col>
           </Row>

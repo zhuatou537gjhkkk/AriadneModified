@@ -313,14 +313,14 @@ def _calculate_time_sync_offset() -> int:
 
 
 @router.get("/dashboard/traffic-trend")
-async def get_traffic_trend(hours: int = 1):
+async def get_traffic_trend(hours: float = 0.33):
     """
     获取流量趋势数据（用于 TrafficTrend 组件）
 
     从数据库查询真实的事件数据，按时间段统计 Zeek（网络）和 Wazuh（端点）的事件数量。
     
     参数:
-    - hours: 时间范围（小时），默认为1小时
+    - hours: 时间范围（小时），默认为0.33小时（20分钟）
 
     返回:
     - categories: 时间点数组
@@ -856,6 +856,256 @@ async def explore_graph_node(node_id: str):
         }
     except Exception as e:
         logger.error(f"节点探索失败: {str(e)}")
+        return {"nodes": [], "links": [], "error": str(e)}
+
+
+@router.get("/investigation/chains/list")
+async def get_attack_chains_list(time_range_hours: int = Query(24, ge=1, le=720)):
+    """
+    获取攻击链列表（摘要信息）
+    
+    Args:
+        time_range_hours: 时间范围（小时）
+    
+    返回:
+        {
+            "total": int,
+            "chains": [
+                {
+                    "id": "chain_0",
+                    "name": "cmd.exe → powershell.exe",
+                    "severity": "high",
+                    "length": 4,
+                    "host_id": "host1",
+                    "timestamp": "2024-01-01 10:00:00",
+                    "type": "process_tree"
+                }
+            ]
+        }
+    """
+    try:
+        # 获取所有攻击链
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        chains = attack_chains.get("chains", [])
+        network_connections = attack_chains.get("network_connections", [])
+        
+        # 构建进程链摘要列表
+        chain_list = []
+        for idx, chain in enumerate(chains):
+            chain_nodes = chain.get("chain", [])
+            if not chain_nodes or len(chain_nodes) < 2:
+                continue
+            
+            # 生成攻击链名称（根据起点和终点进程）
+            first_process = chain_nodes[0].get("name", "Unknown")
+            last_process = chain_nodes[-1].get("name", "Unknown")
+            chain_name = f"{first_process} → {last_process}"
+            
+            # 计算严重程度（基于链长度和危险进程）
+            dangerous_procs = ['powershell.exe', 'cmd.exe', 'mimikatz.exe', 'psexec.exe', 
+                             'nc.exe', 'regsvr32.exe', 'rundll32.exe', 'wscript.exe', 'cscript.exe']
+            has_dangerous = any(n.get("name") in dangerous_procs for n in chain_nodes)
+            severity = "high" if (has_dangerous and len(chain_nodes) >= 3) else "medium" if has_dangerous else "low"
+            
+            # 获取时间戳
+            first_seen = chain_nodes[0].get("first_seen")
+            timestamp = first_seen if first_seen else "Unknown"
+            
+            chain_list.append({
+                "id": f"chain_{idx}",
+                "name": chain_name,
+                "severity": severity,
+                "length": chain.get("chain_length", len(chain_nodes)),
+                "host_id": chain.get("host_id", "Unknown"),
+                "timestamp": timestamp,
+                "type": chain.get("type", "process_tree"),
+                "description": f"{len(chain_nodes)} 个进程节点"
+            })
+        
+        # 添加网络连接链
+        for idx, conn in enumerate(network_connections):
+            path = conn.get("path", [])
+            if not path or len(path) < 2:
+                continue
+            
+            # 生成网络连接链名称
+            first_ip = path[0].get("ip_address", "Unknown")
+            last_ip = path[-1].get("ip_address", "Unknown")
+            chain_name = f"{first_ip} ⇄ {last_ip}"
+            
+            # 检查是否连接到外部 IP
+            has_external = any(not node.get("is_private", True) for node in path)
+            severity = "high" if has_external else "medium"
+            
+            chain_list.append({
+                "id": f"network_{idx}",
+                "name": chain_name,
+                "severity": severity,
+                "length": len(path),
+                "host_id": "Network",
+                "timestamp": conn.get("timestamp", "Unknown"),
+                "type": "network_connection",
+                "description": f"{len(path)} 跳网络连接"
+            })
+        
+        # 按严重程度和时间排序
+        severity_order = {"high": 0, "medium": 1, "low": 2}
+        chain_list.sort(key=lambda x: (severity_order.get(x["severity"], 3), x["timestamp"]), reverse=True)
+        
+        logger.info(f"返回 {len(chain_list)} 个攻击链摘要")
+        
+        return {
+            "total": len(chain_list),
+            "chains": chain_list
+        }
+    except Exception as e:
+        logger.error(f"获取攻击链列表失败: {str(e)}", exc_info=True)
+        return {"total": 0, "chains": [], "error": str(e)}
+
+
+@router.get("/investigation/chains/{chain_id}")
+async def get_single_chain_graph(chain_id: str, time_range_hours: int = Query(24, ge=1, le=720)):
+    """
+    获取单个攻击链的完整图谱数据
+    
+    Args:
+        chain_id: 攻击链ID（格式：chain_0, chain_1... 或 network_0, network_1...）
+        time_range_hours: 时间范围（小时）
+    
+    返回:
+        {
+            "nodes": [...],
+            "links": [...],
+            "metadata": {
+                "chain_id": "chain_0",
+                "chain_length": 4,
+                "chain_type": "process_tree"
+            }
+        }
+    """
+    try:
+        # 解析 chain_id
+        id_parts = chain_id.split("_")
+        if len(id_parts) != 2:
+            return {"nodes": [], "links": [], "error": "Invalid chain_id format"}
+        
+        chain_type = id_parts[0]  # "chain" 或 "network"
+        chain_index = int(id_parts[1])
+        
+        # 获取所有攻击链
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        
+        nodes = []
+        links = []
+        metadata = {}
+        
+        if chain_type == "chain":
+            # 进程链
+            chains = attack_chains.get("chains", [])
+            
+            if chain_index >= len(chains):
+                return {"nodes": [], "links": [], "error": "Chain not found"}
+            
+            # 获取指定的攻击链
+            target_chain = chains[chain_index]
+            chain_nodes = target_chain.get("chain", [])
+            edges = target_chain.get("edges", [])
+            
+            # 构建节点
+            for i, node in enumerate(chain_nodes):
+                node_id = f"proc_{node.get('pid')}_{node.get('name')}"
+                nodes.append({
+                    "id": node_id,
+                    "name": f"{node.get('name')} (PID:{node.get('pid')})",
+                    "label": f"{node.get('name')} (PID:{node.get('pid')})",
+                    "category": "Process",
+                    "details": f"Path: {node.get('path', 'N/A')}\nCmd: {node.get('command', 'N/A')}\nFirst Seen: {node.get('first_seen', 'N/A')}",
+                    "level": i + 1,
+                    "symbolSize": 35
+                })
+                
+                # 添加边
+                if i > 0:
+                    prev_node = chain_nodes[i - 1]
+                    prev_id = f"proc_{prev_node.get('pid')}_{prev_node.get('name')}"
+                    links.append({
+                        "source": prev_id,
+                        "target": node_id,
+                        "label": "SPAWNED",
+                        "timestamp": edges[i-1].get("timestamp") if i-1 < len(edges) else None,
+                        "value": 3
+                    })
+            
+            metadata = {
+                "chain_id": chain_id,
+                "chain_length": len(nodes),
+                "chain_type": target_chain.get("type", "process_tree"),
+                "host_id": target_chain.get("host_id", "Unknown")
+            }
+            
+        elif chain_type == "network":
+            # 网络连接链
+            network_connections = attack_chains.get("network_connections", [])
+            
+            if chain_index >= len(network_connections):
+                return {"nodes": [], "links": [], "error": "Network connection not found"}
+            
+            # 获取指定的网络连接
+            target_conn = network_connections[chain_index]
+            path = target_conn.get("path", [])
+            conn_edges = target_conn.get("edges", [])
+            
+            # 构建节点
+            for i, node in enumerate(path):
+                ip = node.get("ip_address")
+                if ip:
+                    node_id = f"ip_{ip}"
+                    is_private = node.get("is_private", True)
+                    nodes.append({
+                        "id": node_id,
+                        "name": ip,
+                        "label": ip,
+                        "category": "IP" if is_private else "External_IP",
+                        "details": f"Type: {'Internal' if is_private else 'External'}\nLocation: {node.get('location', 'Unknown')}",
+                        "level": i + 1,
+                        "symbolSize": 40 if not is_private else 35
+                    })
+            
+            # 添加边（多跳）
+            for i in range(len(path) - 1):
+                src_ip = path[i].get("ip_address")
+                dst_ip = path[i + 1].get("ip_address")
+                if src_ip and dst_ip:
+                    edge_info = conn_edges[i] if i < len(conn_edges) else {}
+                    links.append({
+                        "source": f"ip_{src_ip}",
+                        "target": f"ip_{dst_ip}",
+                        "label": "CONNECTED_TO",
+                        "port": edge_info.get("dst_port"),
+                        "protocol": edge_info.get("protocol"),
+                        "bytes": edge_info.get("bytes_sent", 0),
+                        "value": 3
+                    })
+            
+            metadata = {
+                "chain_id": chain_id,
+                "chain_length": len(nodes),
+                "chain_type": "network_connection",
+                "total_bytes": sum(e.get("bytes_sent", 0) for e in conn_edges)
+            }
+        else:
+            return {"nodes": [], "links": [], "error": "Invalid chain type"}
+        
+        logger.info(f"返回攻击链 {chain_id} 的图谱数据: {len(nodes)} 节点, {len(links)} 边")
+        
+        return {
+            "nodes": nodes,
+            "links": links,
+            "metadata": metadata
+        }
+        
+    except Exception as e:
+        logger.error(f"获取单个攻击链失败: {str(e)}", exc_info=True)
         return {"nodes": [], "links": [], "error": str(e)}
 
 
