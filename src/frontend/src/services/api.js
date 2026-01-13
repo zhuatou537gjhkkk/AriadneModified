@@ -129,3 +129,22 @@ export const getAttributionResult = async () => {
         };
     }
 };
+
+// === 新增：获取攻击叙事线 (Storyline) ===
+export const getAttackStoryline = async () => {
+    // 这里直接向后端发请求，假设后端接口是 /investigation/storyline
+    // request 已经封装了 axios，会自动带上 baseURL
+    try {
+        return await request.get(`/investigation/storyline${noCache()}`);
+    } catch (e) {
+        // Mock 数据逻辑保持不变...
+        return [
+            { time: '09:59:00', content: '正常业务流量基线建立完毕', type: 'info' },
+            { time: '10:00:01', content: '检测到 WebShell 访问 (192.168.1.5)', type: 'danger' },
+            { time: '10:02:15', content: '执行可疑 PowerShell 脚本', type: 'warning' },
+            { time: '10:05:30', content: '向恶意 C2 (114.x.x.x) 发起连接', type: 'danger' }
+        ];
+    }
+};
+
+

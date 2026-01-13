@@ -1,11 +1,13 @@
 /* src/App.jsx - 完整重构版 */
 import React, { useState, useMemo, useEffect } from 'react';
+import wsService from './services/websocket'; // 引入刚才创建的服务
 import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, ConfigProvider, theme, Switch, Progress, Timeline, Button, List, Avatar, Empty, Drawer, Descriptions, Slider, Spin, message } from 'antd';
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
   SafetyCertificateOutlined, WarningOutlined, BugOutlined, CodeOutlined,
   WifiOutlined, ThunderboltFilled, PlayCircleOutlined
 } from '@ant-design/icons';
+
 
 // 引入组件
 import AttackGraph from './components/AttackGraph';
@@ -14,7 +16,7 @@ import EntropyChart from './components/EntropyChart';
 import TopologyGraph from './components/TopologyGraph';
 
 // 引入 API 服务
-import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult } from './services/api';
+import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getAttackStoryline } from './services/api';
 
 const { Header, Content, Sider } = Layout;
 
@@ -58,6 +60,7 @@ const App = () => {
   const [assetData, setAssetData] = useState([]);
   const [hitTactics, setHitTactics] = useState([]);
   const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', score: 0 });
+  const [storyline, setStoryline] = useState([]);
 
   // === 2. 交互状态 ===
   const [selectedNode, setSelectedNode] = useState(null);
@@ -73,14 +76,15 @@ const App = () => {
       setLoading(true);
       try {
         // 并行请求所有关键数据（修复：Promise.all 的顺序和解构必须一一对应）
-        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes] = await Promise.all([
+        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes, storylineRes] = await Promise.all([
           getDashboardStats(),
           getTrafficTrend(),
           getLatestAlerts(),
           getAttackGraph(),
           getAssetsList(),
           getAttackHighlights(),
-          getAttributionResult()
+          getAttributionResult(),
+          getAttackStoryline()
         ]);
 
         console.log(statsRes);
@@ -92,6 +96,7 @@ const App = () => {
         setAssetData(assetsRes);
         setHitTactics(attackRes);
         setAttribution(attrRes);
+        setStoryline(storylineRes);
 
         // message.success("实时数据已同步");
       } catch (error) {
@@ -103,6 +108,81 @@ const App = () => {
 
     loadAllData();
     // 真实场景可以设置定时器轮询: const timer = setInterval(loadAllData, 30000);
+
+    // ==========================================
+    // 2. 新增：WebSocket 实时通信集成
+    // ==========================================
+    // 连接 WebSocket
+    wsService.connect();
+
+    // 订阅消息处理函数
+    // 订阅消息处理函数
+    const unsubscribe = wsService.subscribe((msg) => {
+      console.log('收到 WebSocket 消息:', msg);
+
+      switch (msg.type) {
+
+        // === 情况 A: 收到最新的分析报告 ===
+        // === 情况 A: 收到最新的分析报告 ===
+        case 'analysis_report':
+          message.info(`收到新的实时分析报告 (${msg.timestamp})`);
+
+          // 1. 更新统计数据 (严格对齐 endpoints.py 公式)
+          const chainCount = msg.attack_chains?.total || 0;
+          const lateralCount = msg.lateral_movement || 0;
+          const exfilCount = msg.data_exfiltration || 0;
+          const totalThreats = chainCount + lateralCount + exfilCount;
+
+          setStats(prev => ({
+            ...prev,
+            active_threats: totalThreats,
+            intercepted_today: totalThreats * 45,
+          }));
+
+          // 2. 【核心修复】更新 ATT&CK 矩阵高亮
+          // WebSocket 只推了统计数字，具体的“技术名称”需要调用 API 获取
+          // 这里直接调用我们在 api.js 里定义的接口，它会返回 ["Web Shell", "Process Injection"...]
+          getAttackHighlights().then(hitList => {
+            console.log("刷新 ATT&CK 高亮:", hitList);
+            setHitTactics(hitList || []);
+          });
+
+          // 3. 触发其他详情刷新
+          getLatestAlerts().then(setAlertList);
+          getAttributionResult().then(setAttribution);
+          getAttackStoryline().then(setStoryline);
+          getAttackGraph().then(setGraphData);
+          getAssetsList().then(setAssetData);
+          getTrafficTrend().then(setTrafficData);
+
+          break;
+
+        // === 情况 B: ETL 状态更新 ===
+        case 'etl_status':
+          // 如果后端发来了 EPS (Events Per Second) 数据，可以在这里更新
+          // if (msg.events_processed) {
+          //    setStats(prev => ({ ...prev, throughput_eps: msg.events_processed }));
+          // }
+          break;
+
+        // === 情况 C: 错误处理 ===
+        case 'etl_error':
+        case 'analysis_error':
+          message.error(`系统后台错误: ${msg.error}`);
+          break;
+
+        default:
+          break;
+      }
+    });
+
+    // 组件卸载时断开连接
+    return () => {
+      unsubscribe(); // 取消订阅
+      wsService.disconnect(); // 关闭 socket
+    };
+
+
   }, []);
 
   // === 4. 时序回放逻辑 ===
@@ -246,10 +326,27 @@ const App = () => {
                 </div>
               </Card>
               <Card title="攻击叙事线 (STORYLINE)" bordered={false} className="cyber-card">
-                {/* Storyline 逻辑暂时保持硬编码，也可同理替换为 API 数据 */}
                 <Timeline mode="left" style={{ marginTop: '20px' }}>
-                  <Timeline.Item color="gray" label={<span style={{ color: '#64748b' }}>09:59:00</span>}><span style={{ color: '#94a3b8' }}>正常业务流量基线建立完毕</span></Timeline.Item>
-                  <Timeline.Item color={timeStep >= 1 ? "red" : "gray"} label={<span style={{ color: '#64748b' }}>10:00:01</span>}><span style={{ color: timeStep >= 1 ? '#fff' : '#64748b' }}>检测到 WebShell 访问 (192.168.1.5)</span></Timeline.Item>
+
+                  {/* === 动态渲染开始 === */}
+                  {storyline && storyline.length > 0 ? (
+                    storyline.map((item, index) => (
+                      <Timeline.Item
+                        key={index}
+                        // 根据后端返回的 type 字段决定颜色 (danger=红, warning=黄, info=蓝)
+                        color={item.type === 'danger' ? 'red' : (item.type === 'warning' ? 'orange' : 'blue')}
+                        label={<span style={{ color: '#64748b' }}>{item.time}</span>}
+                      >
+                        <span style={{ color: '#cbd5e1' }}>
+                          {item.content}
+                        </span>
+                      </Timeline.Item>
+                    ))
+                  ) : (
+                    <Timeline.Item>暂无数据</Timeline.Item>
+                  )}
+                  {/* === 动态渲染结束 === */}
+
                 </Timeline>
               </Card>
             </Col>
@@ -276,7 +373,7 @@ const App = () => {
         const tactics = Object.keys(attackMatrix);
         const firstRowTactics = tactics.slice(0, 6);  // 前6个战术
         const secondRowTactics = tactics.slice(6, 12); // 后6个战术
-        
+
         const renderTacticColumn = (tactic) => (
           <div key={tactic} style={{ minWidth: '180px', flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '10px' }}>
             <div style={{ color: '#cbd5e1', fontWeight: 'bold', marginBottom: '10px', borderBottom: '2px solid #334155', paddingBottom: '8px' }}>{tactic}</div>
@@ -289,7 +386,7 @@ const App = () => {
             )}
           </div>
         );
-        
+
         return (
           <Row style={{ height: '100%' }}>
             <Col span={24}>
