@@ -133,11 +133,15 @@ const App = () => {
           const exfilCount = msg.data_exfiltration || 0;
           const totalThreats = chainCount + lateralCount + exfilCount;
 
+          // 更新活跃威胁数，但不在这里更新 intercepted_today
+          // intercepted_today 应该从后端 API 实时查询，而不是通过公式计算
           setStats(prev => ({
             ...prev,
             active_threats: totalThreats,
-            intercepted_today: totalThreats * 45,
           }));
+
+          // 重新获取完整的统计数据（包括 intercepted_today）
+          getDashboardStats().then(setStats);
 
           // 2. 【核心修复】更新 ATT&CK 矩阵高亮
           // WebSocket 只推了统计数字，具体的“技术名称”需要调用 API 获取

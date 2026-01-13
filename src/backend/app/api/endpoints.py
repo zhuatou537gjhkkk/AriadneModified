@@ -58,24 +58,47 @@ async def get_dashboard_summary():
     }
     """
     try:
+        # ============ 1. 计算活跃威胁数 ============
         # 使用分析模块获取攻击链统计
         attack_chains = chain_builder.build_attack_chain(time_range_hours=24)
         lateral_movements = chain_builder.find_lateral_movement(time_range_hours=24)
         data_exfiltrations = chain_builder.find_data_exfiltration()
         
-        # 计算活跃威胁数 = 攻击链数 + 横向移动数 + 外泄事件数
+        # 活跃威胁数 = 攻击链数 + 横向移动数 + 外泄事件数
         active_threats = (
             attack_chains.get("total_count", 0) +
             len(lateral_movements) +
             len(data_exfiltrations)
         )
         
+        # ============ 2. 计算今日拦截告警数 ============
+        # 统计今日检测到的所有攻击模式数量
+        reverse_shells = graph_algo.find_attack_patterns("reverse_shell")
+        cred_dumps = graph_algo.find_attack_patterns("credential_dump")
+        lateral_moves = graph_algo.find_attack_patterns("lateral_movement")
+        webshells = graph_algo.find_attack_patterns("webshell")
+        
+        intercepted_today = (
+            len(reverse_shells) +
+            len(cred_dumps) +
+            len(lateral_moves) +
+            len(webshells)
+        )
+        
+        # ============ 3. 计算数据吞吐量 EPS ============
+        # 查询最近 60 秒内新增的事件数量，计算 EPS
+        throughput_eps = _calculate_throughput_eps()
+        
+        # ============ 4. 计算时间同步偏差 ============
+        # 比较数据库最新事件时间与当前系统时间
+        time_sync_offset = _calculate_time_sync_offset()
+        
         # 严格按前端期望格式返回（仅 4 个字段，无额外数据）
         return {
             "active_threats": active_threats,
-            "intercepted_today": active_threats * 45,  # 模拟每个威胁产生 45 条告警
-            "throughput_eps": 4600,  # 每秒事件数
-            "time_sync_offset": 12  # 时间偏差 (ms)
+            "intercepted_today": intercepted_today,
+            "throughput_eps": throughput_eps,
+            "time_sync_offset": time_sync_offset
         }
     except Exception as e:
         logger.error(f"获取态势总览失败: {str(e)}")
@@ -86,6 +109,207 @@ async def get_dashboard_summary():
             "throughput_eps": 0,
             "time_sync_offset": 0
         }
+
+
+def _calculate_throughput_eps() -> int:
+    """
+    计算数据吞吐量（每秒事件数 EPS）
+    
+    优先查询最近 60 秒的实时数据；
+    如果没有实时数据，则基于数据库中所有数据的实际时间跨度计算平均 EPS
+    
+    Returns:
+        int: 每秒事件数
+    """
+    try:
+        session = db.get_session()
+        try:
+            # ============ 策略 1: 查询最近 60 秒的实时数据 ============
+            now = datetime.now()
+            one_minute_ago = now - timedelta(seconds=60)
+            
+            # 查询最近 60 秒内更新的节点和关系数量
+            recent_query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL 
+              AND n.last_updated >= datetime($since_time)
+            WITH count(n) as recent_nodes
+            MATCH ()-[r]->()
+            WHERE r.last_updated IS NOT NULL 
+              AND r.last_updated >= datetime($since_time)
+            RETURN recent_nodes, count(r) as recent_rels
+            """
+            
+            recent_result = session.run(recent_query, since_time=one_minute_ago.isoformat())
+            recent_record = recent_result.single()
+            
+            if recent_record:
+                recent_nodes = recent_record["recent_nodes"] or 0
+                recent_rels = recent_record["recent_rels"] or 0
+                total_events = recent_nodes + recent_rels
+                
+                if total_events > 0:
+                    eps = total_events // 60
+                    logger.info(f"EPS 计算（实时）- 最近节点: {recent_nodes}, 最近关系: {recent_rels}, EPS: {eps}")
+                    return eps
+            
+            # ============ 策略 2: 基于历史数据的实际时间跨度计算 ============
+            # 查询数据库中最早和最晚的时间戳
+            timespan_query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL
+            WITH n.last_updated as ts
+            ORDER BY ts
+            WITH collect(ts) as timestamps
+            WHERE size(timestamps) > 0
+            RETURN timestamps[0] as earliest, timestamps[-1] as latest
+            """
+            
+            timespan_result = session.run(timespan_query)
+            timespan_record = timespan_result.single()
+            
+            if timespan_record and timespan_record["earliest"] and timespan_record["latest"]:
+                earliest = timespan_record["earliest"]
+                latest = timespan_record["latest"]
+                
+                # 解析时间戳
+                def parse_neo4j_time(ts):
+                    if hasattr(ts, 'to_native'):
+                        native = ts.to_native()
+                        return native.astimezone().replace(tzinfo=None) if hasattr(native, 'astimezone') else native
+                    elif isinstance(ts, str):
+                        return datetime.fromisoformat(ts.replace('Z', '+00:00').split('+')[0].split('.')[0])
+                    elif isinstance(ts, datetime):
+                        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+                    return None
+                
+                earliest_dt = parse_neo4j_time(earliest)
+                latest_dt = parse_neo4j_time(latest)
+                
+                if earliest_dt and latest_dt:
+                    # 计算实际时间跨度（秒）
+                    time_span_seconds = (latest_dt - earliest_dt).total_seconds()
+                    
+                    if time_span_seconds > 0:
+                        # 查询总数据量
+                        count_query = """
+                        MATCH (n) 
+                        WITH count(n) as nodes
+                        MATCH ()-[r]->()
+                        RETURN nodes, count(r) as rels
+                        """
+                        count_result = session.run(count_query)
+                        count_record = count_result.single()
+                        
+                        if count_record:
+                            total_nodes = count_record["nodes"] or 0
+                            total_rels = count_record["rels"] or 0
+                            total_data = total_nodes + total_rels
+                            
+                            # 基于实际时间跨度计算平均 EPS
+                            eps = int(total_data / time_span_seconds)
+                            logger.info(f"EPS 计算（历史）- 总数据: {total_data}, 时间跨度: {time_span_seconds}秒, EPS: {eps}")
+                            return max(1, eps)  # 至少返回 1
+            
+            # ============ 策略 3: 降级处理 ============
+            # 如果以上都失败，返回一个基于总数据量的保守估计
+            fallback_query = """
+            MATCH (n) 
+            WITH count(n) as nodes
+            MATCH ()-[r]->()
+            RETURN nodes, count(r) as rels
+            """
+            fallback_result = session.run(fallback_query)
+            fallback_record = fallback_result.single()
+            
+            if fallback_record:
+                total_data = (fallback_record["nodes"] or 0) + (fallback_record["rels"] or 0)
+                
+                # 如果有大量数据，说明系统在运行，给一个合理的估算
+                if total_data > 1000:
+                    # 假设数据在 1 小时内采集（更合理的估计）
+                    eps = max(10, total_data // 3600)  # 至少返回 10 EPS
+                elif total_data > 0:
+                    # 数据量很少，可能刚启动
+                    eps = max(1, total_data // 600)  # 假设在 10 分钟内采集
+                else:
+                    eps = 0
+                
+                logger.info(f"EPS 计算（降级）- 总数据: {total_data}, 估算 EPS: {eps}")
+                return eps
+            
+            return 0
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"计算 EPS 失败: {str(e)}", exc_info=True)
+        return 0
+
+
+def _calculate_time_sync_offset() -> int:
+    """
+    计算时间同步偏差（毫秒）
+    
+    反映数据新鲜度：当前时间 - 最新事件时间
+    - 如果偏差小，说明数据流是实时的
+    - 如果偏差大，说明 ETL 延迟或没有新数据
+    
+    Returns:
+        int: 时间偏差（毫秒）
+    """
+    try:
+        session = db.get_session()
+        try:
+            now = datetime.now()
+            
+            # 查询数据库中最新的时间戳
+            query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL
+            RETURN n.last_updated as ts
+            ORDER BY n.last_updated DESC
+            LIMIT 1
+            """
+            
+            result = session.run(query)
+            record = result.single()
+            
+            if record and record["ts"]:
+                ts = record["ts"]
+                
+                # 解析数据库时间戳
+                def parse_neo4j_time(ts):
+                    if hasattr(ts, 'to_native'):
+                        native = ts.to_native()
+                        return native.astimezone().replace(tzinfo=None) if hasattr(native, 'astimezone') else native
+                    elif isinstance(ts, str):
+                        return datetime.fromisoformat(ts.replace('Z', '+00:00').split('+')[0].split('.')[0])
+                    elif isinstance(ts, datetime):
+                        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+                    return None
+                
+                db_time = parse_neo4j_time(ts)
+                
+                if db_time:
+                    # 计算时间差（毫秒）- 显示实际偏差
+                    time_diff = (now - db_time).total_seconds() * 1000
+                    
+                    # 如果时间差为负数（未来时间），说明有时钟偏差
+                    time_diff_abs = abs(time_diff)
+                    
+                    logger.info(f"时间同步偏差: {int(time_diff_abs)} ms (数据时间: {db_time}, 当前时间: {now})")
+                    return int(time_diff_abs)
+            
+            # 数据库完全为空
+            logger.warning("时间同步偏差计算失败：数据库无数据")
+            return 0
+                
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"计算时间同步偏差失败: {str(e)}", exc_info=True)
+        return 0
 
 
 @router.get("/dashboard/traffic-trend")
