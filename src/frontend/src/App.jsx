@@ -16,7 +16,7 @@ import EntropyChart from './components/EntropyChart';
 import TopologyGraph from './components/TopologyGraph';
 
 // 引入 API 服务
-import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getAttackStoryline } from './services/api';
+import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult } from './services/api';
 
 const { Header, Content, Sider } = Layout;
 
@@ -60,7 +60,7 @@ const App = () => {
   const [assetData, setAssetData] = useState([]);
   const [hitTactics, setHitTactics] = useState([]);
   const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', score: 0 });
-  const [storyline, setStoryline] = useState([]);
+  // const [storyline, setStoryline] = useState([]); // 攻击叙事线功能已禁用
 
   // === 2. 交互状态 ===
   const [selectedNode, setSelectedNode] = useState(null);
@@ -76,7 +76,7 @@ const App = () => {
       setLoading(true);
       try {
         // 并行请求所有关键数据（修复：Promise.all 的顺序和解构必须一一对应）
-        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes, storylineRes] = await Promise.all([
+        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes] = await Promise.all([
           getDashboardStats(),
           getTrafficTrend(),
           getLatestAlerts(),
@@ -84,7 +84,7 @@ const App = () => {
           getAssetsList(),
           getAttackHighlights(),
           getAttributionResult(),
-          getAttackStoryline()
+          // getAttackStoryline() // 攻击叙事线功能已禁用
         ]);
 
         console.log(statsRes);
@@ -96,7 +96,7 @@ const App = () => {
         setAssetData(assetsRes);
         setHitTactics(attackRes);
         setAttribution(attrRes);
-        setStoryline(storylineRes);
+        // setStoryline(storylineRes); // 攻击叙事线功能已禁用
 
         // message.success("实时数据已同步");
       } catch (error) {
@@ -154,7 +154,7 @@ const App = () => {
           // 3. 触发其他详情刷新
           getLatestAlerts().then(setAlertList);
           getAttributionResult().then(setAttribution);
-          getAttackStoryline().then(setStoryline);
+          // getAttackStoryline().then(setStoryline); // 攻击叙事线功能已禁用
           getAttackGraph().then(setGraphData);
           getAssetsList().then(setAssetData);
           getTrafficTrend().then(setTrafficData);
@@ -329,15 +329,13 @@ const App = () => {
                   />
                 </div>
               </Card>
+              {/* 攻击叙事线功能已禁用
               <Card title="攻击叙事线 (STORYLINE)" bordered={false} className="cyber-card">
                 <Timeline mode="left" style={{ marginTop: '20px' }}>
-
-                  {/* === 动态渲染开始 === */}
                   {storyline && storyline.length > 0 ? (
                     storyline.map((item, index) => (
                       <Timeline.Item
                         key={index}
-                        // 根据后端返回的 type 字段决定颜色 (danger=红, warning=黄, info=蓝)
                         color={item.type === 'danger' ? 'red' : (item.type === 'warning' ? 'orange' : 'blue')}
                         label={<span style={{ color: '#64748b' }}>{item.time}</span>}
                       >
@@ -349,10 +347,9 @@ const App = () => {
                   ) : (
                     <Timeline.Item>暂无数据</Timeline.Item>
                   )}
-                  {/* === 动态渲染结束 === */}
-
                 </Timeline>
               </Card>
+              */}
             </Col>
             <Col span={6}>
               <Card title="节点详情 (DETAILS)" bordered={false} className="cyber-card" style={{ height: '100%' }}>
