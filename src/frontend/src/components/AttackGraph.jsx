@@ -153,7 +153,7 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
                     edgeLength: 100,
                     gravity: 0.15,
                     friction: 0.6,              // 增加摩擦力，让节点快速稳定
-                    layoutAnimation: false      // 关闭布局动画，防止乱动
+                    layoutAnimation: true      // 关闭布局动画，防止乱动
                 },
                 autoCurveness: true,            // 自动曲率，避免边重叠
                 label: {

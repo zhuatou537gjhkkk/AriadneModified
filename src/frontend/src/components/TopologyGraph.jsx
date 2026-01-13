@@ -8,16 +8,16 @@ const TopologyGraph = () => {
 
     // 定义节点分类对应的样式
     const categoryStyles = {
-        Server: { color: '#38bdf8', symbolSize: 50 },      // 天蓝色
-        Sensor: { color: '#818cf8', symbolSize: 40 },      // 紫色
-        Endpoint: { color: '#34d399', symbolSize: 30 },    // 绿色
+        Server: { color: '#5070dd', symbolSize: 50 },      // 天蓝色
+        Sensor: { color: '#a3e635', symbolSize: 40 },      // 黄绿色
+        Endpoint: { color: '#64748b', symbolSize: 30 },    // 深灰色
         Compromised: {                                      // 红色（带发光效果）
-            color: '#f43f5e',
-            symbolSize: 30,
-            borderColor: '#f43f5e',
+            color: '#f97316',
+            symbolSize: 35,
+            borderColor: '#f97316',
             borderWidth: 2,
             shadowBlur: 10,
-            shadowColor: '#f43f5e'
+            shadowColor: '#f97316'
         }
     };
 
