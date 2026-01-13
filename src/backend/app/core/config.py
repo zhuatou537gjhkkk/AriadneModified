@@ -17,27 +17,15 @@ class Settings(BaseSettings):
     NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "ariadne_neo4j")
 
     # ==========================================
-    # 生产环境配置（已注释，保留用于部署）
+    # todo: 生产环境配置，后续修改
     # ==========================================
-    # LOG_PATH_WAZUH: str = os.getenv("LOG_PATH_WAZUH", "/var/ossec/logs/archives/archives.json")
-    # LOG_DIR_ZEEK: str = os.getenv("LOG_DIR_ZEEK", "/var/log/fusion_logs/zeek/")
-    # ZEEK_FILES_TO_WATCH: list = os.getenv("ZEEK_FILES_TO_WATCH", ["conn.log", "dns.log", "http.log", "files.log"])
-
-    # ==========================================
-    # 测试/开发环境配置（使用 data 文件夹中的模拟日志）
-    # ==========================================
-    # 获取项目根目录
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent.parent
-    
-    # 测试日志路径（data 文件夹）
-    LOG_PATH_WAZUH: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
-    LOG_DIR_ZEEK: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\"
-    ZEEK_FILES_TO_WATCH: list = ["conn.log", "dns.log", "http.log", "files.log"]
+    LOG_PATH_WAZUH: str = os.getenv("LOG_PATH_WAZUH", "/home/Ariadne/data/logs/wazuh/archives.json")
+    LOG_DIR_ZEEK: str = os.getenv("LOG_DIR_ZEEK", "/home/Ariadne/data/logs/zeek/")
+    ZEEK_FILES_TO_WATCH: list = os.getenv("ZEEK_FILES_TO_WATCH", ["conn.log", "dns.log", "http.log", "files.log"])
 
     class Config:
         # 指定环境变量文件路径
-        # env_file = "../../../.env"
-        env_file = "D:\\Projects\\Python\\Courses\\Ariadne\\.env"
+        env_file = "/home/Ariadne/.env"
         case_sensitive = True
 
 

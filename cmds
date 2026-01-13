@@ -1,0 +1,10 @@
+docker run --restart always --publish=7474:7474 --publish=7687:7687 --env NEO4J_AUTH=neo4j/ariadne_neo4j --volume=/home/Ariadne/data/neo4j_data:/data neo4j
+conda create -n ariadne python=3.12
+conda activate ariadne
+pip install -r requirements.txt
+cd home/Ariadne/src/frontend
+conda install -c conda-forge nodejs
+npm install
+npm run dev
+cd src/backend
+python main.py

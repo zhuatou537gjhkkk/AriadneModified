@@ -26,7 +26,7 @@ from app.enrichment.attribution import Attribution
 logger = logging.getLogger("FusionTrace.AnalysisPipeline")
 
 # 输出目录
-OUTPUT_DIR = Path("D:/Projects/Python/Courses/Ariadne/data/output")
+OUTPUT_DIR = Path("/home/Ariadne/data/output")
 
 
 class AnalysisPipeline:
