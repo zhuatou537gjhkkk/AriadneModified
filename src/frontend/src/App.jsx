@@ -5,7 +5,7 @@ import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, ConfigProvider, th
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
   SafetyCertificateOutlined, WarningOutlined, BugOutlined, CodeOutlined,
-  WifiOutlined, ThunderboltFilled, PlayCircleOutlined
+  WifiOutlined, ThunderboltFilled, PlayCircleOutlined, DoubleLeftOutlined, DoubleRightOutlined
 } from '@ant-design/icons';
 
 
@@ -17,6 +17,10 @@ import TopologyGraph from './components/TopologyGraph';
 
 // 引入 API 服务
 import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getChainsList, getSingleChainGraph } from './services/api';
+
+// --- 1. 新增：引入图片资源 ---
+import logoIcon from './images/Ariadne Logo.png';
+import logoText from './images/logo文字部分.png';
 
 const { Header, Content, Sider } = Layout;
 
@@ -49,8 +53,21 @@ const hitTactics = ["Command and Scripting Interpreter", "Process Injection", "O
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
+  // 1. 新增：动画状态锁，用于解决收缩时的气泡闪烁问题
+  const [isAnimating, setIsAnimating] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [loading, setLoading] = useState(true); // 全局加载状态
+  // 1. 新增：实时时钟 State
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
+
+  // 2. 新增：页面标题映射 (根据 currentView 显示不同的大标题)
+  const viewTitles = {
+    'dashboard': '态势总览 (DASHBOARD)',
+    'investigation': '溯源画布 (INVESTIGATION)',
+    'attack': '战术分析 (ATT&CK)',
+    'assets': '资产与探针 (SENSORS)',
+    'attribution': '情报与归因 (ATTRIBUTION)'
+  };
 
   // === 1. 动态数据状态 (State) ===
   const [stats, setStats] = useState({ active_threats: 0, intercepted_today: 0, throughput_eps: 0, time_sync_offset: 0 });
@@ -61,7 +78,7 @@ const App = () => {
   const [hitTactics, setHitTactics] = useState([]);
   const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', score: 0 });
   // const [storyline, setStoryline] = useState([]); // 攻击叙事线功能已禁用
-  
+
   // 【新增】攻击链相关状态
   const [chainsList, setChainsList] = useState([]);  // 攻击链列表
   const [selectedChainId, setSelectedChainId] = useState(null);  // 当前选中的攻击链
@@ -72,6 +89,22 @@ const App = () => {
   const [analysisVisible, setAnalysisVisible] = useState(false);
   const [currentAlert, setCurrentAlert] = useState(null);
   const [timeStep, setTimeStep] = useState(4);
+
+  // 3. 新增：useEffect 更新时间
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // 格式化时间：2026-01-14 18:30:45
+      const now = new Date();
+      const timeString = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0');
+      setCurrentTime(timeString);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // === 3. 数据加载逻辑 (Lifecycle) ===
   useEffect(() => {
@@ -169,7 +202,7 @@ const App = () => {
           // getAttackStoryline().then(setStoryline); // 攻击叙事线功能已禁用
           getAssetsList().then(setAssetData);
           getTrafficTrend().then(setTrafficData);
-          
+
           // 【新增】重新加载攻击链列表并刷新当前选中的链
           getChainsList().then(newChainsList => {
             setChainsList(newChainsList.chains || []);
@@ -233,11 +266,11 @@ const App = () => {
   // 【新增】处理攻击链点击事件
   const handleChainClick = async (chainId) => {
     if (selectedChainId === chainId) return; // 已经选中，不重复加载
-    
+
     setSelectedChainId(chainId);
     setSelectedNode(null);  // 清除节点选择
     setHighlightPath([]);   // 清除高亮路径
-    
+
     try {
       const graphRes = await getSingleChainGraph(chainId);
       setGraphData(graphRes);
@@ -368,13 +401,13 @@ const App = () => {
                 </div>
               </Card>
             </Col>
-            
+
             {/* 【修改】右侧面板：从节点详情改为攻击链列表 */}
             <Col span={6}>
-              <Card 
-                title="攻击链列表 (ATTACK CHAINS)" 
-                bordered={false} 
-                className="cyber-card" 
+              <Card
+                title="攻击链列表 (ATTACK CHAINS)"
+                bordered={false}
+                className="cyber-card"
                 style={{ height: '100%', maxHeight: '680px' }}
                 bodyStyle={{ padding: '8px', overflowY: 'auto', maxHeight: '600px' }}
               >
@@ -409,9 +442,9 @@ const App = () => {
                       >
                         <List.Item.Meta
                           avatar={
-                            <Avatar 
+                            <Avatar
                               size="small"
-                              style={{ 
+                              style={{
                                 backgroundColor: chain.severity === 'high' ? '#f43f5e' : chain.severity === 'medium' ? '#fbbf24' : '#22d3ee',
                                 fontWeight: 'bold',
                                 fontSize: '11px'
@@ -426,13 +459,13 @@ const App = () => {
                                 {chain.name}
                               </span>
                               <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                <Tag 
+                                <Tag
                                   color={chain.severity === 'high' ? 'red' : chain.severity === 'medium' ? 'orange' : 'blue'}
                                   style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
                                 >
                                   {chain.severity.toUpperCase()}
                                 </Tag>
-                                <Tag 
+                                <Tag
                                   color={chain.type === 'process_tree' ? 'purple' : 'cyan'}
                                   style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
                                 >
@@ -452,9 +485,9 @@ const App = () => {
                     )}
                   />
                 ) : (
-                  <Empty 
-                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                    description={<span style={{ color: '#64748b' }}>暂无攻击链数据</span>} 
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={<span style={{ color: '#64748b' }}>暂无攻击链数据</span>}
                   />
                 )}
               </Card>
@@ -511,16 +544,18 @@ const App = () => {
               { title: '角色', dataIndex: 'role', render: (r) => <Tag color="blue">{r}</Tag> },
               { title: 'Wazuh 采集', key: 'wazuh', render: (_, record) => <Switch checkedChildren={<CodeOutlined />} unCheckedChildren={<CodeOutlined />} defaultChecked={record.wazuh} /> },
               { title: 'Zeek 流量', key: 'zeek', render: (_, record) => <Switch checkedChildren={<WifiOutlined />} unCheckedChildren={<WifiOutlined />} defaultChecked={record.zeek} /> },
-              { title: '状态', dataIndex: 'status', render: (status) => {
-                const statusConfig = {
-                  online: { color: 'success', text: 'Online' },
-                  offline: { color: 'default', text: 'Offline' },
-                  suspicious: { color: 'warning', text: 'Suspicious' },
-                  compromised: { color: 'error', text: 'Compromised' }
-                };
-                const config = statusConfig[status?.toLowerCase()] || statusConfig.online;
-                return <Tag color={config.color}>{config.text}</Tag>;
-              }},
+              {
+                title: '状态', dataIndex: 'status', render: (status) => {
+                  const statusConfig = {
+                    online: { color: 'success', text: 'Online' },
+                    offline: { color: 'default', text: 'Offline' },
+                    suspicious: { color: 'warning', text: 'Suspicious' },
+                    compromised: { color: 'error', text: 'Compromised' }
+                  };
+                  const config = statusConfig[status?.toLowerCase()] || statusConfig.online;
+                  return <Tag color={config.color}>{config.text}</Tag>;
+                }
+              },
             ]} pagination={false} rowClassName={() => 'cyber-table-row'} />
           </Card>
         );
@@ -574,14 +609,267 @@ const App = () => {
   return (
     <ConfigProvider theme={{ algorithm: theme.darkAlgorithm, token: { colorBgBase: '#0b1121', colorBorder: 'rgba(56, 189, 248, 0.2)' }, components: { Table: { colorBgContainer: 'transparent', borderColor: '#1e293b' }, Drawer: { colorBgElevated: '#0f172a' } } }}>
       <Layout style={{ minHeight: '100vh' }}>
-        <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} width={240}>
-          <div style={{ height: 50, margin: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontSize: '18px', fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{collapsed ? 'A' : 'ARIADNE'}</div>
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          // 2. 修改 onCollapse：点击收缩时，上锁 300ms (对应 CSS 动画时间)
+          onCollapse={(value) => {
+            // === 1.【同步拦截】点击瞬间，立马给 body 加锁，不给 Tooltip 任何机会 ===
+            document.body.classList.add('sidebar-animating');
+            setCollapsed(value);
+            setIsAnimating(true);
+            if (document.activeElement && document.activeElement.blur) {
+              document.activeElement.blur();
+            }
+            // === 2.【定时解锁】动画结束后 (300ms) 移除锁 ===
+            setTimeout(() => {
+              setIsAnimating(false);
+              document.body.classList.remove('sidebar-animating');
+            }, 300);
+          }}
+          width={240}
+          // 3. 修改 style：在动画期间禁用鼠标事件 (pointerEvents: 'none')
+          style={{
+            overflow: 'hidden',
+            // 核心修复代码：如果正在动画中，禁止一切鼠标交互（也就不会触发 Tooltip 了）
+            pointerEvents: isAnimating ? 'none' : 'auto'
+          }}
+          // --- 修改开始：自定义底部触发器 ---
+          trigger={
+            <div className="cyber-sider-trigger">
+              {/* 根据收缩状态切换图标 */}
+              {collapsed ? (
+                <DoubleRightOutlined style={{ color: '#38bdf8', fontSize: '16px' }} />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
+                  <DoubleLeftOutlined style={{ color: '#38bdf8' }} />
+                  <span style={{ fontSize: '12px', fontFamily: '"Share Tech Mono", monospace', letterSpacing: '1px' }}>
+                    COLLAPSE
+                  </span>
+                </div>
+              )}
+            </div>
+          }
+        // --- 修改结束 ---
+        >
+          {/* --- 修改开始：侧边栏 Logo 区域 (防抖动优化版) --- */}
+          <div style={{
+            height: 64,
+            margin: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}>
+            {/* 1. 图标 Logo */}
+            <img
+              src={logoIcon}
+              alt="Ariadne Icon"
+              style={{
+                height: collapsed ? '36px' : '48px',
+                width: 'auto',
+                // 【修改】速度改为 0.2s，与侧边栏收缩同步
+                transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                objectFit: 'contain'
+              }}
+            />
+
+            {/* 2. 文字 Logo 的容器 */}
+            <div style={{
+              maxWidth: collapsed ? 0 : 200,
+              opacity: collapsed ? 0 : 1,
+              marginLeft: collapsed ? 0 : 6,
+
+              display: 'flex',
+              alignItems: 'center',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              // 【修改】速度改为 0.2s，快速收缩，避免撑开侧边栏
+              transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            }}>
+              <img
+                src={logoText}
+                alt="Ariadne Text"
+                style={{
+                  height: '34px',
+                  objectFit: 'contain'
+                }}
+              />
+            </div>
+          </div>
+          {/* --- 修改结束 --- */}
           <Menu theme="dark" defaultSelectedKeys={['dashboard']} mode="inline" items={items} onClick={handleMenuClick} />
         </Sider>
         <Layout>
-          <Header style={{ padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
-            <h2 style={{ margin: 0, color: '#fff', fontSize: '20px' }}>全球威胁态势感知中心</h2>
-            <div style={{ color: '#f43f5e', border: '1px solid #f43f5e', padding: '4px 12px', borderRadius: '4px' }}><WarningOutlined spin /> 实时告警中</div>
+          <Header style={{
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            height: '64px',
+            background: 'rgba(15, 23, 42, 0.6)', // 稍微加深背景
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(56, 189, 248, 0.1)'
+          }}>
+            {/* --- 修改开始：头部左侧 (标题 + 时间) --- */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+
+              {/* 1. 当前页面大标题 */}
+              <h2 style={{
+                margin: 0,
+                color: '#fff',
+                fontSize: '20px',
+                fontWeight: 800, // 字体加粗
+                letterSpacing: '1px', // 增加字间距，更有科技感
+                fontFamily: '"Chakra Petch", sans-serif', // 如果有赛博字体最好，没有就用默认
+                textTransform: 'uppercase'
+              }}>
+                {viewTitles[currentView] || 'SYSTEM CONSOLE'}
+              </h2>
+
+              {/* 2. 分隔竖线 */}
+              <div style={{ width: '1px', height: '16px', background: '#334155' }}></div>
+
+              {/* 3. 实时时间 (模仿图1的灰色小字) */}
+              {/* --- 修改开始：增强版电子赛博时钟 --- */}
+              <div style={{
+                fontFamily: '"Share Tech Mono", monospace',
+                // 容器样式保持不变
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                padding: '0 12px',      // 上下 padding 设为 0，靠 flex 居中
+                borderRadius: '2px',
+
+                display: 'flex',
+                alignItems: 'center',
+                height: '32px',
+                gap: '12px',            // 左侧标签和右侧时间拉开一点距离
+                userSelect: 'none',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+              }}>
+
+                {/* 左侧：元数据列 (T-SYNC + ACTIVE) */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  borderRight: '1px solid rgba(255,255,255,0.1)', // 中间加一条细线分隔
+                  paddingRight: '12px',
+                  height: '20px' // 控制高度，让线条短一点
+                }}>
+                  {/* 第一行：功能标签 */}
+                  <span style={{
+                    color: '#64748b',
+                    fontSize: '9px',
+                    fontWeight: 'bold',
+                    lineHeight: '1',
+                    letterSpacing: '1px',
+                    marginBottom: '3px'
+                  }}>T-SYNC</span>
+
+                  {/* 第二行：状态标签 (带绿色呼吸灯) */}
+                  <span style={{
+                    color: '#4ade80',  // 亮绿色
+                    fontSize: '9px',
+                    lineHeight: '1',
+                    letterSpacing: '1px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    textShadow: '0 0 5px rgba(74, 222, 128, 0.4)' // 文字绿色微光
+                  }}>
+                    <span className="status-dot-green"></span> {/* 引用CSS动画 */}
+                    ACTIVE
+                  </span>
+                </div>
+
+                {/* 右侧：时间本体 */}
+                <div style={{
+                  fontSize: '18px',
+                  color: '#38bdf8',
+                  textShadow: '0 0 10px rgba(56, 189, 248, 0.6)',
+                  letterSpacing: '2px',
+                  lineHeight: '32px' // 垂直居中
+                }}>
+                  {currentTime}
+                </div>
+              </div>
+              {/* --- 修改结束 --- */}
+
+              {/* 4. (可选) 威胁等级 Badge - 仅在 Dashboard 显示 */}
+              {currentView === 'dashboard' && (
+                <div
+                  className="threat-badge-animate" // 引用刚才在 index.css 定义的呼吸动画
+                  style={{
+                    marginLeft: '16px', // 稍微离时间远一点
+                    // 移除原来的固定背景和边框颜色，交给 CSS 动画控制以实现呼吸效果
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+
+                    color: '#f43f5e',
+                    fontSize: '11px', // 字体改小一点，更精致
+                    fontWeight: 700,
+                    fontFamily: '"Chakra Petch", sans-serif',
+
+                    // 【关键修改】紧凑布局设置
+                    height: '24px',        // 强制固定高度，防止变得太胖
+                    padding: '0 10px',     // 左右留白，上下为0 (靠 align-items 居中)
+                    borderRadius: '4px',   // 稍微圆润一点
+
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    letterSpacing: '0.5px',
+                    cursor: 'default',
+                    userSelect: 'none'
+                  }}>
+                  {/* 红点指示器 */}
+                  <div style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#f43f5e',
+                    boxShadow: '0 0 6px #f43f5e' // 红点自带常亮光晕
+                  }}></div>
+                  HIGH THREAT LEVEL
+                </div>
+              )}
+            </div>
+            {/* --- 修改结束 --- */}
+
+            {/* --- 修改开始：Header 右侧 (高级状态指示器) --- */}
+            <div
+              className="alert-status-container" // 引用光影扫描动画
+              style={{
+                height: '32px',              // 1. 压低高度，使其紧凑
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 16px',           // 左右留出空间
+
+                // 2. 科技感设计核心：
+                // 不用全边框，只用左侧亮条作为视觉锚点
+                borderLeft: '3px solid #f43f5e',
+                // 右侧加个圆角，左侧直角，增加几何美感
+                borderRadius: '0 4px 4px 0',
+
+                color: '#f43f5e',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                fontFamily: '"Chakra Petch", sans-serif',
+                boxShadow: 'inset -10px 0 20px -10px rgba(244, 63, 94, 0.2)', // 内部微光
+                cursor: 'default',
+                userSelect: 'none'
+              }}>
+              {/* 旋转的图标，加一个发光滤镜 */}
+              <WarningOutlined spin style={{ marginRight: '8px', fontSize: '14px', filter: 'drop-shadow(0 0 5px #f43f5e)' }} />
+
+              <span>SYSTEM ALERTING</span>
+
+              {/* 可选：加一个小小的 LIVE 状态点 */}
+              <div style={{ width: 6, height: 6, background: '#f43f5e', borderRadius: '50%', marginLeft: '10px', boxShadow: '0 0 5px #f43f5e' }}></div>
+            </div>
+            {/* --- 修改结束 --- */}
           </Header>
           <Content style={{ margin: '20px', overflowY: 'auto', height: 'calc(100vh - 100px)' }}>
             {renderContent()}

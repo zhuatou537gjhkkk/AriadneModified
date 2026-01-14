@@ -1,4 +1,6 @@
 /* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
 :root {
   --bg-color: #0b1121;
   /* 深空蓝背景 */
@@ -108,4 +110,323 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* src/index.css */
+
+/* 红色呼吸灯动画 - 增强版 (文字、红点、边框同步闪烁) */
+@keyframes pulse-red {
+  0% {
+    /* 暗淡状态 */
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.0);
+    border-color: rgba(244, 63, 94, 0.3);
+    background-color: rgba(244, 63, 94, 0.05);
+    color: rgba(244, 63, 94, 0.6);
+    /* 文字变暗 */
+    text-shadow: 0 0 0 rgba(244, 63, 94, 0);
+    /* 无光晕 */
+    opacity: 0.7;
+    /* 整体(包括红点)透明度降低 */
+  }
+
+  50% {
+    /* 高亮状态 - 爆发 */
+    box-shadow: 0 0 15px 0 rgba(244, 63, 94, 0.5);
+    /* 边框光晕 */
+    border-color: rgba(244, 63, 94, 1.0);
+    background-color: rgba(244, 63, 94, 0.25);
+    color: rgba(244, 63, 94, 1.0);
+    /* 文字高亮 */
+    text-shadow: 0 0 8px rgba(244, 63, 94, 0.8);
+    /* 文字发光 */
+    opacity: 1;
+    /* 整体完全不透明 */
+  }
+
+  100% {
+    /* 回到暗淡状态 */
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.0);
+    border-color: rgba(244, 63, 94, 0.3);
+    background-color: rgba(244, 63, 94, 0.05);
+    color: rgba(244, 63, 94, 0.6);
+    text-shadow: 0 0 0 rgba(244, 63, 94, 0);
+    opacity: 0.7;
+  }
+}
+
+/* 保持类名不变，动画时间可以稍微加快一点增加紧张感 */
+.threat-badge-animate {
+  animation: pulse-red 1.5s infinite ease-in-out;
+}
+
+/* src/index.css 末尾添加 */
+
+/* 全息扫描光效 */
+@keyframes hologram-scan {
+  0% {
+    background-position: 200% 0;
+    /* 光效从右边开始 */
+  }
+
+  100% {
+    background-position: -200% 0;
+    /* 划到左边 */
+  }
+}
+
+.alert-status-container {
+  /* 渐变背景：左边深，右边透明，中间有一道光划过 */
+  background: linear-gradient(90deg,
+      rgba(244, 63, 94, 0.1) 0%,
+      rgba(244, 63, 94, 0.4) 50%,
+      rgba(244, 63, 94, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: hologram-scan 3s linear infinite;
+  /* 3秒一次循环扫描 */
+}
+
+/* 绿色信号灯闪烁 */
+@keyframes signal-green {
+  0% {
+    opacity: 0.5;
+    box-shadow: 0 0 0 #4ade80;
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 8px #4ade80;
+  }
+
+  /* 发光 */
+  100% {
+    opacity: 0.5;
+    box-shadow: 0 0 0 #4ade80;
+  }
+}
+
+.status-dot-green {
+  width: 6px;
+  height: 6px;
+  background-color: #4ade80;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+  animation: signal-green 2s infinite ease-in-out;
+}
+
+/* 侧边栏底部触发器 - 赛博改造版 */
+.cyber-sider-trigger {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 背景：深色半透明 + 科技感网格纹理 */
+  background: rgba(15, 23, 42, 0.95) !important;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+  background-size: 10px 10px;
+
+  /* 顶部能量线 */
+  border-top: 1px solid rgba(56, 189, 248, 0.3);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* 顶部中间的高亮装饰条 (Handle) */
+.cyber-sider-trigger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  background: #38bdf8;
+  /* 霓虹蓝 */
+  box-shadow: 0 0 8px #38bdf8;
+  /* 发光效果 */
+  transition: width 0.3s ease;
+}
+
+/* 悬停效果 */
+.cyber-sider-trigger:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  /* 整体变亮 */
+  color: #fff !important;
+}
+
+.cyber-sider-trigger:hover::before {
+  width: 100%;
+  /* 能量线展开 */
+  box-shadow: 0 0 15px #38bdf8;
+}
+
+/* =========================================
+   侧边栏菜单项 - 赛博机械化改造
+   ========================================= */
+
+/* 1. 基础容器：移除默认背景，增加边距让它们像独立的按钮 */
+.ant-menu-dark .ant-menu-item {
+  margin: 8px 12px !important;
+  /* 上下留空，左右内缩，形成独立模块感 */
+  width: calc(100% - 24px) !important;
+  /* 配合 margin 调整宽度 */
+  border-radius: 6px !important;
+  /* 稍微圆润一点的硬角 */
+  background: transparent !important;
+  /* 默认透明 */
+  border: 1px solid transparent;
+  /* 预留边框位置，防止抖动 */
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  /* 丝滑过渡 */
+  overflow: hidden;
+  /* 关键：把光效限制在框内 */
+  position: relative;
+}
+
+/* 2. 核心光效：顶部的“能量光条” (默认隐藏) */
+/* 使用伪元素 ::before 模拟触发器的那个顶部光条 */
+.ant-menu-dark .ant-menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  /* 居中定位 */
+  width: 0px;
+  /* 默认宽度为 0 (隐藏) */
+  height: 2px;
+  background: #38bdf8;
+  /* 霓虹蓝 */
+  box-shadow: 0 0 8px #38bdf8;
+  /* 强烈的发光 */
+  transition: width 0.3s ease-out;
+  /* 宽度展开动画 */
+  z-index: 5;
+}
+
+/* 3. 交互状态 (鼠标悬停 Hover 或 选中 Selected) */
+.ant-menu-dark .ant-menu-item:hover,
+.ant-menu-dark .ant-menu-item-selected {
+  /* 背景：深色半透明 + 科技网格纹理 (同底部触发器) */
+  background: rgba(15, 23, 42, 0.6) !important;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px) !important;
+  background-size: 8px 8px !important;
+
+  /* 文字：高亮发光 */
+  color: #fff !important;
+  text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
+
+  /* 边框：微弱的蓝色描边 */
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+/* 4. 动画触发：展开顶部能量条 */
+.ant-menu-dark .ant-menu-item:hover::before,
+.ant-menu-dark .ant-menu-item-selected::before {
+  width: 60%;
+  /* 悬停或选中时，光条从中间向两边展开至 60% 宽度 */
+}
+
+/* 5. 清理默认样式：隐藏 Ant Design 默认的蓝色竖条 */
+.ant-menu-dark .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+/* =========================================
+   修复：侧边栏收缩状态下的图标居中问题 (最终完美版)
+   ========================================= */
+
+/* 1. 针对所有菜单项容器 */
+.ant-menu-dark .ant-menu-item {
+  transition:
+    width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    margin 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    padding 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    background 0.3s ease !important;
+
+  display: flex !important;
+  align-items: center;
+}
+
+/* 2. 针对文字内容 */
+.ant-menu-dark .ant-menu-item .ant-menu-title-content {
+  opacity: 1;
+  max-width: 200px;
+  margin-left: 10px;
+  /* 展开时，文字距离图标 10px */
+
+  transition:
+    opacity 0.2s ease,
+    max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1),
+    margin-left 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 3. 针对图标 (关键修改点！) */
+.ant-menu-dark .ant-menu-item .anticon {
+  min-width: 14px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  /* 展开时，图标可能有默认的 margin-right，AntD 默认会有 */
+}
+
+/* === 收缩状态下的特殊处理 (.ant-menu-inline-collapsed) === */
+
+/* 4. 收缩后的菜单项容器 */
+.ant-menu-inline-collapsed .ant-menu-item {
+  /* 强制 Flex 居中 */
+  justify-content: center !important;
+  padding: 0 !important;
+
+  /* 变为 48px 小方块 */
+  width: 48px !important;
+
+  /* 计算逻辑：侧边栏宽 80px，盒子宽 48px，左右间距 = (80 - 48) / 2 = 16px */
+  margin: 8px 16px !important;
+}
+
+/* 5. 收缩后的文字：完全消失 【修改此处】 */
+.ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
+  opacity: 0;
+  max-width: 0 !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+
+  /* 核心修复：
+     1. opacity 0s: 收缩瞬间立即隐藏文字，防止高亮文字在布局调整时被看到。
+     2. max-width 0.3s: 保持宽度的平滑收缩，让图标有“滑入中间”的动画效果，而不是生硬跳变。
+  */
+  transition: opacity 0s, max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
+}
+
+/* 6. 收缩后的图标：核心修复 */
+.ant-menu-inline-collapsed .ant-menu-item .anticon {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+/* === 终极修复：侧边栏动画期间强制隐藏所有气泡 ===
+   解决左上角出现幽灵 Tooltip 的问题。
+   不管 Ant Design 算出了什么坐标，统统隐藏。
+*/
+body.sidebar-animating .ant-tooltip {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 顺手把气泡的小箭头也隐藏了 */
+body.sidebar-animating .ant-tooltip-arrow {
+  display: none !important;
 }
