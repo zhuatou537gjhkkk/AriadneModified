@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     class Config:
         # 指定环境变量文件路径
         # env_file = "../../../.env"
-        env_file = "D:\\Projects\\Python\\Courses\\Ariadne\\.env"
+        env_file = "/home/Ariadne/.env"
         case_sensitive = True
 
 
