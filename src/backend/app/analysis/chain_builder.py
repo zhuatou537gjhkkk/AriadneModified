@@ -77,16 +77,25 @@ class ChainBuilder:
         
         all_suspicious = WINDOWS_SUSPICIOUS + LINUX_SUSPICIOUS
         
+        # 策略1: 查找最长的进程链（优先返回长链）
+        # 使用 ANY 检查路径中是否有任何可疑进程，而不仅仅是首尾
         query = """
-        MATCH path=(root:Process)-[edges:SPAWNED*1..5]->(leaf:Process)
-        WHERE root.process_name IN $suspicious_procs
-           OR leaf.process_name IN $suspicious_procs
-           OR root.command_line IS NOT NULL
+        MATCH path=(root:Process)-[edges:SPAWNED*1..6]->(leaf:Process)
+        WHERE ANY(n IN nodes(path) WHERE n.process_name IN $suspicious_procs OR n.command_line IS NOT NULL)
+        WITH path, root, leaf, nodes(path) as path_nodes, relationships(path) as path_edges
+        // 按路径长度降序排序，优先返回长链
+        ORDER BY length(path) DESC, root.first_seen DESC
+        // 去重：只保留最长的链（避免子链重复）
+        WITH DISTINCT root, collect({
+            path_nodes: path_nodes,
+            path_edges: path_edges,
+            length: length(path)
+        })[0] as best_path
         RETURN 
             root.host_id as host_id,
-            nodes(path) as path_nodes,
-            [rel in relationships(path) | {type: type(rel), timestamp: rel.timestamp, event_id: rel.event_id}] as path_edges
-        ORDER BY root.first_seen DESC
+            best_path.path_nodes as path_nodes,
+            [rel in best_path.path_edges | {type: type(rel), timestamp: rel.timestamp, event_id: rel.event_id}] as path_edges
+        ORDER BY size(best_path.path_nodes) DESC
         LIMIT 100
         """
         
@@ -94,7 +103,21 @@ class ChainBuilder:
             results = self.graph_sync.execute_query(query, {"suspicious_procs": all_suspicious})
             chains = []
             
-            # 如果没有找到进程链（没有 SPAWNED 关系），尝试查找单独的可疑进程
+            # 如果策略1没有找到进程链，尝试策略2：简化查询
+            if not results:
+                logger.info("策略1未找到链，尝试简化查询...")
+                simple_query = """
+                MATCH path=(root:Process)-[edges:SPAWNED*1..6]->(leaf:Process)
+                RETURN 
+                    root.host_id as host_id,
+                    nodes(path) as path_nodes,
+                    [rel in relationships(path) | {type: type(rel), timestamp: rel.timestamp, event_id: rel.event_id}] as path_edges
+                ORDER BY length(path) DESC, root.first_seen DESC
+                LIMIT 100
+                """
+                results = self.graph_sync.execute_query(simple_query, {})
+            
+            # 如果策略2也没有找到，查找单独的可疑进程
             if not results:
                 logger.info("未找到进程链（无 SPAWNED 关系），尝试查找单独的可疑进程...")
                 single_proc_query = """
