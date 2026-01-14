@@ -1,4 +1,4 @@
-# <img src="./img/logo.jpg" height="30"> Ariadne：基于多源数据的恶意攻击行为溯源分析系统
+# <img src="./img/logo.png" height="50"> Ariadne：基于多源数据的恶意攻击行为溯源分析系统
 
 ![系统展示](./img/name.png)
 
