@@ -38,8 +38,8 @@ from enum import Enum
 
 # 日志文件路径
 LOG_PATHS = {
-    "wazuh": Path("/home/Ariadne/data/logs/wazuh/archives/archives.json"),
-    "zeek_conn": Path("/home/Ariadne/data/logs/zeek/conn.log"),
+    "wazuh": Path("/var/lib/docker/volumes/single-node_wazuh_logs/_data/alerts/alerts.json"),
+    "zeek_conn": Path("/home/Ariadne/data/logs/zeek/conn.json"),
     "zeek_dns": Path("/home/Ariadne/data/logs/zeek/dns.log"),
     "zeek_http": Path("/home/Ariadne/data/logs/zeek/http.log"),
     "zeek_files": Path("/home/Ariadne/data/logs/zeek/files.log"),

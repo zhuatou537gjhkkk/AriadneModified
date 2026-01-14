@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     # ==========================================
     # 生产环境配置
     # ==========================================
-    LOG_PATH_WAZUH: str = os.getenv("LOG_PATH_WAZUH", "/home/Ariadne/data/logs/wazuh/archives.json")
+    LOG_PATH_WAZUH: str = os.getenv("LOG_PATH_WAZUH", "/var/lib/docker/volumes/single-node_wazuh_logs/_data/alerts/alerts.json")
     LOG_DIR_ZEEK: str = os.getenv("LOG_DIR_ZEEK", "/home/Ariadne/data/logs/zeek/")
-    ZEEK_FILES_TO_WATCH: list = os.getenv("ZEEK_FILES_TO_WATCH", ["conn.log", "dns.log", "http.log", "files.log"])
+    ZEEK_FILES_TO_WATCH: list = os.getenv("ZEEK_FILES_TO_WATCH", ["conn.json"])
 
     class Config:
         # 指定环境变量文件路径
