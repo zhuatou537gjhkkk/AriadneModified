@@ -90,7 +90,7 @@ const App = () => {
           getAttributionResult(),
         ]);
 
-        console.log(statsRes);
+        console.log(trafficRes);
 
         setStats(statsRes);
         setTrafficData(trafficRes);

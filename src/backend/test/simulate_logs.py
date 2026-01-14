@@ -8,12 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # 日志文件路径
-WAZUH_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
-ZEEK_CONN_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\conn.log"
-ZEEK_DNS_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\dns.log"
-ZEEK_HTTP_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\http.log"
-ZEEK_FILES_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\files.log"
-
+WAZUH_LOG = "/home/Ariadne/data/logs/wazuh/archives.json"
+ZEEK_CONN_LOG = "/home/Ariadne/data/logs/zeek/conn.log"
+ZEEK_DNS_LOG = "/home/Ariadne/data/logs/zeek/dns.log"
+ZEEK_HTTP_LOG = "/home/Ariadne/data/logs/zeek/http.log"
+ZEEK_FILES_LOG = "/home/Ariadne/data/logs/zeek/files.log"
 
 # 攻击场景状态跟踪
 attack_state = {
