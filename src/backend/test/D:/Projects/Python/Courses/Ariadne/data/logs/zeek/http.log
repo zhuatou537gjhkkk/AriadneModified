@@ -1,0 +1,1 @@
+{"ts": 1768375958.01214, "uid": "HxVDVmiSQto68fOVSt", "id.orig_h": "192.168.1.102", "id.orig_p": 59435, "id.resp_h": "45.67.89.123", "id.resp_p": 80, "proto": "tcp", "method": "GET", "host": "45.67.89.123", "uri": "/payload.ps1", "user_agent": "PowerShell", "status_code": 200}

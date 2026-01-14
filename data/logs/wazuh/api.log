@@ -1,0 +1,203 @@
+2026/01/13 12:25:19 INFO: Checking RBAC database integrity...
+2026/01/13 12:25:19 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 12:25:19 INFO: RBAC database integrity check finished successfully
+2026/01/13 12:25:25 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 12:27:46 INFO: Checking RBAC database integrity...
+2026/01/13 12:27:46 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 12:27:46 INFO: RBAC database integrity check finished successfully
+2026/01/13 12:27:51 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 12:27:58 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.012s: 400
+2026/01/13 12:29:57 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 12:30:00 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:30:00 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:30:00 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 12:30:03 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:30:03 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:30:09 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:30:09 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:30:10 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:30:24 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:31:37 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:32:56 INFO: wazuh-wui 172.18.0.2 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:33:44 INFO: Checking RBAC database integrity...
+2026/01/13 12:33:44 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 12:33:44 INFO: RBAC database integrity check finished successfully
+2026/01/13 12:33:49 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 12:35:14 INFO: Checking RBAC database integrity...
+2026/01/13 12:35:14 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 12:35:15 INFO: RBAC database integrity check finished successfully
+2026/01/13 12:35:20 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 12:35:28 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.012s: 400
+2026/01/13 12:39:22 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:39:36 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 12:39:41 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:41:41 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:41:50 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:42:55 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:42:55 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:43:34 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:47:01 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:47:08 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:47:44 INFO: wazuh-wui 172.18.0.1 "GET /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:53:50 INFO: wazuh-wui 172.18.0.1 "GET /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 12:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 12:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:07:21 INFO: Checking RBAC database integrity...
+2026/01/13 13:07:21 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 13:07:21 INFO: RBAC database integrity check finished successfully
+2026/01/13 13:07:26 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 13:07:34 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.016s: 400
+2026/01/13 13:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.008s: 400
+2026/01/13 13:16:03 INFO: Checking RBAC database integrity...
+2026/01/13 13:16:03 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 13:16:03 INFO: RBAC database integrity check finished successfully
+2026/01/13 13:16:09 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 13:16:16 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.016s: 400
+2026/01/13 13:16:42 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:16:42 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:16:42 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:16:42 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:16:42 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:16:43 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:16:43 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:16:43 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:14 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:20:15 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:15 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:20:15 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:20:15 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:24:35 INFO: Checking RBAC database integrity...
+2026/01/13 13:24:35 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 13:24:35 INFO: RBAC database integrity check finished successfully
+2026/01/13 13:24:41 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 13:24:46 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.018s: 400
+2026/01/13 13:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:28:21 INFO: Checking RBAC database integrity...
+2026/01/13 13:28:21 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 13:28:21 INFO: RBAC database integrity check finished successfully
+2026/01/13 13:28:27 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 13:28:32 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.009s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:29:19 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.076s: 400
+2026/01/13 13:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.007s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:33:54 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:37:49 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:37:49 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:38:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:38:01 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:38:01 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:38:01 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:38:02 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:38:02 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 13:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 13:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 13:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 14:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:05:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:05:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 14:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 14:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.002s: 400
+2026/01/13 14:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 14:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.005s: 400
+2026/01/13 14:40:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:45:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 14:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:50:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 14:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 14:55:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:00:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 15:05:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:05:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:10:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:15:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 15:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:20:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:25:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.006s: 400
+2026/01/13 15:30:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:32:32 INFO: Checking RBAC database integrity...
+2026/01/13 15:32:32 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 15:32:32 INFO: RBAC database integrity check finished successfully
+2026/01/13 15:32:37 INFO: Listening on 0.0.0.0:55000..
+2026/01/13 15:32:45 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.009s: 400
+2026/01/13 15:33:39 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:35:00 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:35:25 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:35:26 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.004s: 400
+2026/01/13 15:35:31 INFO: wazuh-wui 172.18.0.4 "POST /security/user/authenticate" with parameters {} and body {} done in 0.003s: 400
+2026/01/13 15:36:35 INFO: Checking RBAC database integrity...
+2026/01/13 15:36:35 INFO: /var/ossec/api/configuration/security/rbac.db file was detected
+2026/01/13 15:36:35 INFO: RBAC database integrity check finished successfully
+2026/01/13 15:36:40 INFO: Listening on 0.0.0.0:55000..
