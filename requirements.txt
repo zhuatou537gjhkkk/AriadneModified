@@ -5,3 +5,4 @@ pydantic-settings>=2.0.0
 neo4j>=5.8.0
 python-dotenv>=1.0.0
 pandas>=2.0.0
+requests>=2.31.0
