@@ -15,9 +15,6 @@ Ariadne 是一个综合性的安全威胁溯源分析平台，通过整合主机
 - 🧪 **攻击模拟** - 内置多种攻击场景模拟器，支持系统测试验证
 
 
-
----
-
 ## 🏗️ 技术架构
 
 ### 后端技术栈
@@ -44,12 +41,10 @@ Ariadne 是一个综合性的安全威胁溯源分析平台，通过整合主机
 
 | 组件 | 版本 | 用途 |
 |------|------|------|
-| **Audidt** | 4.7.2 | 主机行为检测 |
+| **Audidt** | 3.0.7 | 主机行为检测 |
 | **Wazuh** | 4.7.2 | 主机入侵检测 |
 | **Zeek** | - | 网络流量分析 |
 | **Logstash** | 8.10.2 | 日志聚合处理 |
-
----
 
 ## 🚀 快速开始
 
@@ -102,11 +97,9 @@ npm run dev
 部署完成后，通过以下地址访问：
 
 - **Ariadne 主界面**: http://localhost:5173
-- **后端 API 文档**: http://localhost:8000/docs
 - **Neo4j 管理界面**: http://localhost:7474
 - **Wazuh Dashboard**: https://localhost:443
 
----
 
 ## 📂 项目结构
 
@@ -142,8 +135,6 @@ Ariadne/
 └── 操作手册.md               # 详细操作手册
 ```
 
----
-
 ## 🧪 测试工具
 
 系统内置多种攻击场景模拟器，用于测试验证：
@@ -161,7 +152,6 @@ python advanced_log_simulator.py stress 1 60 100
 python advanced_log_simulator.py lateral 10 3
 ```
 
----
 
 ## 🔧 主要模块
 
@@ -183,8 +173,6 @@ python advanced_log_simulator.py lateral 10 3
 - WebSocket 实时推送
 - 完整的 API 文档（Swagger UI）
 
----
-
 ## 📊 监控指标
 
 系统支持以下监控维度：
@@ -195,18 +183,12 @@ python advanced_log_simulator.py lateral 10 3
 - 🖥️ 主机行为分析 - 进程、文件操作监控
 - 🔗 攻击链图谱 - 可视化攻击传播路径
 
----
 
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
----
 
 ## 📄 许可证
 
 本项目仅供学习研究使用。
-
----
-
-*最后更新: 2026-01-14*
