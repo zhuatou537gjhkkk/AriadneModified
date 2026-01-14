@@ -1,4 +1,4 @@
-# <img src="./img/logo.png" height="50"> Ariadne：基于多源数据的恶意攻击行为溯源分析系统
+# <img src="./img/logo.png" height="30"> Ariadne：基于多源数据的恶意攻击行为溯源分析系统
 
 ![系统展示](./img/name.png)
 
@@ -191,4 +191,12 @@ python advanced_log_simulator.py lateral 10 3
 
 ## 📄 许可证
 
-本项目仅供学习研究使用。
+Copyright (c) 2026 [Your Name/Organization]
+本项目采用 [MIT License](LICENSE) 开源协议。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+### 免责声明
+本项目仅供学习研究使用，作者不对使用本软件造成的任何损失负责。在生产环境使用前，请进行充分的安全评估和测试。
+
+### 依赖组件许可证
+本项目使用的开源组件可能有不同的许可证，使用时请注意遵守。
