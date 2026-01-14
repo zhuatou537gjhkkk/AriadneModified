@@ -115,8 +115,38 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
                 roam: true,
                 data: processedNodes,
                 links: processedLinks,
-                force: { repulsion: 2000, edgeLength: 150, gravity: 0.05, layoutAnimation: true },
-                lineStyle: { curveness: 0.2 }
+                edgeSymbol: ['none', 'arrow'],  // 起点无符号，终点箭头
+                edgeSymbolSize: [0, 8],         // 箭头大小
+                force: {
+                    repulsion: 1200,
+                    edgeLength: 100,
+                    gravity: 0.15,
+                    friction: 0.6,              // 增加摩擦力，让节点快速稳定
+                    layoutAnimation: true      // 关闭布局动画，防止乱动
+                },
+                autoCurveness: true,            // 自动曲率，避免边重叠
+                label: {
+                    show: true,
+                    position: 'right',
+                    formatter: '{b}',
+                    fontSize: 11,
+                    color: '#cbd5e1'
+                },
+                lineStyle: {
+                    curveness: 0.2,
+                    opacity: 0.6
+                },
+                emphasis: {
+                    focus: 'none',
+                    scale: 1.1,
+                    itemStyle: {
+                        shadowBlur: 8,
+                        shadowColor: 'rgba(255,255,255,0.4)'
+                    }
+                },
+                edgeLabel: {
+                    show: false  // 不显示边上的文字
+                }
             }
         ]
     };

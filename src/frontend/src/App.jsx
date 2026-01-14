@@ -1,11 +1,13 @@
 /* src/App.jsx - 完整重构版 */
 import React, { useState, useMemo, useEffect } from 'react';
+import wsService from './services/websocket'; // 引入刚才创建的服务
 import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, ConfigProvider, theme, Switch, Progress, Timeline, Button, List, Avatar, Empty, Drawer, Descriptions, Slider, Spin, message } from 'antd';
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
   SafetyCertificateOutlined, WarningOutlined, BugOutlined, CodeOutlined,
   WifiOutlined, ThunderboltFilled, PlayCircleOutlined
 } from '@ant-design/icons';
+
 
 // 引入组件
 import AttackGraph from './components/AttackGraph';
@@ -14,7 +16,7 @@ import EntropyChart from './components/EntropyChart';
 import TopologyGraph from './components/TopologyGraph';
 
 // 引入 API 服务
-import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult } from './services/api';
+import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getChainsList, getSingleChainGraph } from './services/api';
 
 const { Header, Content, Sider } = Layout;
 
@@ -58,6 +60,11 @@ const App = () => {
   const [assetData, setAssetData] = useState([]);
   const [hitTactics, setHitTactics] = useState([]);
   const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', score: 0 });
+  // const [storyline, setStoryline] = useState([]); // 攻击叙事线功能已禁用
+  
+  // 【新增】攻击链相关状态
+  const [chainsList, setChainsList] = useState([]);  // 攻击链列表
+  const [selectedChainId, setSelectedChainId] = useState(null);  // 当前选中的攻击链
 
   // === 2. 交互状态 ===
   const [selectedNode, setSelectedNode] = useState(null);
@@ -72,15 +79,15 @@ const App = () => {
     const loadAllData = async () => {
       setLoading(true);
       try {
-        // 并行请求所有关键数据（修复：Promise.all 的顺序和解构必须一一对应）
-        const [statsRes, trafficRes, alertsRes, graphRes, assetsRes, attackRes, attrRes] = await Promise.all([
+        // 并行请求所有关键数据
+        const [statsRes, trafficRes, alertsRes, chainsListRes, assetsRes, attackRes, attrRes] = await Promise.all([
           getDashboardStats(),
           getTrafficTrend(),
           getLatestAlerts(),
-          getAttackGraph(),
+          getChainsList(),  // ← 新增：获取攻击链列表
           getAssetsList(),
           getAttackHighlights(),
-          getAttributionResult()
+          getAttributionResult(),
         ]);
 
         console.log(trafficRes);
@@ -88,10 +95,20 @@ const App = () => {
         setStats(statsRes);
         setTrafficData(trafficRes);
         setAlertList(alertsRes);
-        setGraphData(graphRes);
+        setChainsList(chainsListRes.chains || []);  // ← 存储攻击链列表
         setAssetData(assetsRes);
         setHitTactics(attackRes);
         setAttribution(attrRes);
+
+        // 【新增】默认加载第一个攻击链的图谱
+        if (chainsListRes.chains && chainsListRes.chains.length > 0) {
+          const firstChain = chainsListRes.chains[0];
+          setSelectedChainId(firstChain.id);
+          const graphRes = await getSingleChainGraph(firstChain.id);
+          setGraphData(graphRes);
+        } else {
+          setGraphData({ nodes: [], links: [] });
+        }
 
         // message.success("实时数据已同步");
       } catch (error) {
@@ -103,6 +120,93 @@ const App = () => {
 
     loadAllData();
     // 真实场景可以设置定时器轮询: const timer = setInterval(loadAllData, 30000);
+
+    // ==========================================
+    // 2. 新增：WebSocket 实时通信集成
+    // ==========================================
+    // 连接 WebSocket
+    wsService.connect();
+
+    // 订阅消息处理函数
+    // 订阅消息处理函数
+    const unsubscribe = wsService.subscribe((msg) => {
+      console.log('收到 WebSocket 消息:', msg);
+
+      switch (msg.type) {
+
+        // === 情况 A: 收到最新的分析报告 ===
+        // === 情况 A: 收到最新的分析报告 ===
+        case 'analysis_report':
+          message.info(`收到新的实时分析报告 (${msg.timestamp})`);
+
+          // 1. 更新统计数据 (严格对齐 endpoints.py 公式)
+          const chainCount = msg.attack_chains?.total || 0;
+          const lateralCount = msg.lateral_movement || 0;
+          const exfilCount = msg.data_exfiltration || 0;
+          const totalThreats = chainCount + lateralCount + exfilCount;
+
+          // 更新活跃威胁数，但不在这里更新 intercepted_today
+          // intercepted_today 应该从后端 API 实时查询，而不是通过公式计算
+          setStats(prev => ({
+            ...prev,
+            active_threats: totalThreats,
+          }));
+
+          // 重新获取完整的统计数据（包括 intercepted_today）
+          getDashboardStats().then(setStats);
+
+          // 2. 【核心修复】更新 ATT&CK 矩阵高亮
+          // WebSocket 只推了统计数字，具体的“技术名称”需要调用 API 获取
+          // 这里直接调用我们在 api.js 里定义的接口，它会返回 ["Web Shell", "Process Injection"...]
+          getAttackHighlights().then(hitList => {
+            console.log("刷新 ATT&CK 高亮:", hitList);
+            setHitTactics(hitList || []);
+          });
+
+          // 3. 触发其他详情刷新
+          getLatestAlerts().then(setAlertList);
+          getAttributionResult().then(setAttribution);
+          // getAttackStoryline().then(setStoryline); // 攻击叙事线功能已禁用
+          getAssetsList().then(setAssetData);
+          getTrafficTrend().then(setTrafficData);
+          
+          // 【新增】重新加载攻击链列表并刷新当前选中的链
+          getChainsList().then(newChainsList => {
+            setChainsList(newChainsList.chains || []);
+            // 如果有选中的链，刷新其图谱
+            if (selectedChainId) {
+              getSingleChainGraph(selectedChainId).then(setGraphData);
+            }
+          });
+
+          break;
+
+        // === 情况 B: ETL 状态更新 ===
+        case 'etl_status':
+          // 如果后端发来了 EPS (Events Per Second) 数据，可以在这里更新
+          // if (msg.events_processed) {
+          //    setStats(prev => ({ ...prev, throughput_eps: msg.events_processed }));
+          // }
+          break;
+
+        // === 情况 C: 错误处理 ===
+        case 'etl_error':
+        case 'analysis_error':
+          message.error(`系统后台错误: ${msg.error}`);
+          break;
+
+        default:
+          break;
+      }
+    });
+
+    // 组件卸载时断开连接
+    return () => {
+      unsubscribe(); // 取消订阅
+      wsService.disconnect(); // 关闭 socket
+    };
+
+
   }, []);
 
   // === 4. 时序回放逻辑 ===
@@ -124,6 +228,23 @@ const App = () => {
     setCurrentView(e.key);
     setSelectedNode(null);
     setHighlightPath([]);
+  };
+
+  // 【新增】处理攻击链点击事件
+  const handleChainClick = async (chainId) => {
+    if (selectedChainId === chainId) return; // 已经选中，不重复加载
+    
+    setSelectedChainId(chainId);
+    setSelectedNode(null);  // 清除节点选择
+    setHighlightPath([]);   // 清除高亮路径
+    
+    try {
+      const graphRes = await getSingleChainGraph(chainId);
+      setGraphData(graphRes);
+    } catch (error) {
+      console.error("Failed to load chain graph:", error);
+      message.error("加载攻击链失败");
+    }
   };
 
   const handleAlertClick = (item) => {
@@ -232,41 +353,110 @@ const App = () => {
                 bordered={false} className="cyber-card" bodyStyle={{ padding: 0 }} style={{ marginBottom: '16px' }}
               >
                 <div style={{ height: 600, width: '100%', position: 'relative' }}>
-                  {filteredGraphData.nodes.length > 0 ? (
-                    <AttackGraph onNodeClick={setSelectedNode} highlightNodes={highlightPath} graphData={filteredGraphData} />
+                  {graphData.nodes && graphData.nodes.length > 0 ? (
+                    <AttackGraph onNodeClick={setSelectedNode} highlightNodes={highlightPath} graphData={graphData} />
                   ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}><Empty description="暂无数据" /></div>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}>
+                      <Empty description="请从右侧选择攻击链" />
+                    </div>
                   )}
                 </div>
                 <div style={{ padding: '20px 24px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid #1e293b' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>时序回放轴 (TIMELINE REPLAY)</div>
-                  <Slider min={0} max={4} value={timeStep} onChange={setTimeStep}
-                    marks={{ 0: { style: { color: '#cbd5e1' }, label: '10:00:00' }, 4: { style: { color: '#f43f5e' }, label: 'C2 Connect' } }}
-                  />
+                  <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>
+                    当前攻击链: {selectedChainId ? chainsList.find(c => c.id === selectedChainId)?.name : '未选择'}
+                  </div>
                 </div>
               </Card>
-              <Card title="攻击叙事线 (STORYLINE)" bordered={false} className="cyber-card">
-                {/* Storyline 逻辑暂时保持硬编码，也可同理替换为 API 数据 */}
-                <Timeline mode="left" style={{ marginTop: '20px' }}>
-                  <Timeline.Item color="gray" label={<span style={{ color: '#64748b' }}>09:59:00</span>}><span style={{ color: '#94a3b8' }}>正常业务流量基线建立完毕</span></Timeline.Item>
-                  <Timeline.Item color={timeStep >= 1 ? "red" : "gray"} label={<span style={{ color: '#64748b' }}>10:00:01</span>}><span style={{ color: timeStep >= 1 ? '#fff' : '#64748b' }}>检测到 WebShell 访问 (192.168.1.5)</span></Timeline.Item>
-                </Timeline>
-              </Card>
             </Col>
+            
+            {/* 【修改】右侧面板：从节点详情改为攻击链列表 */}
             <Col span={6}>
-              <Card title="节点详情 (DETAILS)" bordered={false} className="cyber-card" style={{ height: '100%' }}>
-                {selectedNode ? (
-                  <div style={{ color: '#94a3b8', animation: 'fadeIn 0.3s' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                      <Tag color="blue" style={{ fontSize: '14px', padding: '4px 10px' }}>{selectedNode.category}</Tag>
-                      <h3 style={{ color: '#fff', margin: '10px 0' }}>{selectedNode.name}</h3>
-                    </div>
-                    <Descriptions column={1} size="small" labelStyle={{ color: '#94a3b8' }} contentStyle={{ color: '#fff' }}>
-                      <Descriptions.Item label="ID">{selectedNode.id}</Descriptions.Item>
-                      <Descriptions.Item label="Info">{selectedNode.details}</Descriptions.Item>
-                    </Descriptions>
-                  </div>
-                ) : (<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span style={{ color: '#64748b' }}>点击节点查看详情...</span>} />)}
+              <Card 
+                title="攻击链列表 (ATTACK CHAINS)" 
+                bordered={false} 
+                className="cyber-card" 
+                style={{ height: '100%', maxHeight: '680px' }}
+                bodyStyle={{ padding: '8px', overflowY: 'auto', maxHeight: '600px' }}
+              >
+                {chainsList.length > 0 ? (
+                  <List
+                    size="small"
+                    dataSource={chainsList}
+                    renderItem={chain => (
+                      <List.Item
+                        key={chain.id}
+                        onClick={() => handleChainClick(chain.id)}
+                        style={{
+                          cursor: 'pointer',
+                          borderLeft: selectedChainId === chain.id ? '3px solid #f43f5e' : '3px solid transparent',
+                          backgroundColor: selectedChainId === chain.id ? 'rgba(244, 63, 94, 0.15)' : 'transparent',
+                          padding: '10px 12px',
+                          marginBottom: '6px',
+                          borderRadius: '4px',
+                          transition: 'all 0.3s',
+                          border: '1px solid rgba(255,255,255,0.05)'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedChainId !== chain.id) {
+                            e.currentTarget.style.backgroundColor = 'rgba(56, 189, 248, 0.1)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedChainId !== chain.id) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar 
+                              size="small"
+                              style={{ 
+                                backgroundColor: chain.severity === 'high' ? '#f43f5e' : chain.severity === 'medium' ? '#fbbf24' : '#22d3ee',
+                                fontWeight: 'bold',
+                                fontSize: '11px'
+                              }}
+                            >
+                              {chain.length}
+                            </Avatar>
+                          }
+                          title={
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{ color: '#fff', fontSize: '12px', fontWeight: selectedChainId === chain.id ? 'bold' : 'normal' }}>
+                                {chain.name}
+                              </span>
+                              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                <Tag 
+                                  color={chain.severity === 'high' ? 'red' : chain.severity === 'medium' ? 'orange' : 'blue'}
+                                  style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
+                                >
+                                  {chain.severity.toUpperCase()}
+                                </Tag>
+                                <Tag 
+                                  color={chain.type === 'process_tree' ? 'purple' : 'cyan'}
+                                  style={{ margin: 0, fontSize: '10px', padding: '0 4px' }}
+                                >
+                                  {chain.type === 'process_tree' ? '进程链' : '网络链'}
+                                </Tag>
+                              </div>
+                            </div>
+                          }
+                          description={
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
+                              <div>{chain.host_id}</div>
+                              <div style={{ marginTop: '2px' }}>{chain.description}</div>
+                            </div>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                ) : (
+                  <Empty 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                    description={<span style={{ color: '#64748b' }}>暂无攻击链数据</span>} 
+                  />
+                )}
               </Card>
             </Col>
           </Row>
@@ -276,7 +466,7 @@ const App = () => {
         const tactics = Object.keys(attackMatrix);
         const firstRowTactics = tactics.slice(0, 6);  // 前6个战术
         const secondRowTactics = tactics.slice(6, 12); // 后6个战术
-        
+
         const renderTacticColumn = (tactic) => (
           <div key={tactic} style={{ minWidth: '180px', flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '10px' }}>
             <div style={{ color: '#cbd5e1', fontWeight: 'bold', marginBottom: '10px', borderBottom: '2px solid #334155', paddingBottom: '8px' }}>{tactic}</div>
@@ -289,7 +479,7 @@ const App = () => {
             )}
           </div>
         );
-        
+
         return (
           <Row style={{ height: '100%' }}>
             <Col span={24}>
@@ -321,7 +511,16 @@ const App = () => {
               { title: '角色', dataIndex: 'role', render: (r) => <Tag color="blue">{r}</Tag> },
               { title: 'Wazuh 采集', key: 'wazuh', render: (_, record) => <Switch checkedChildren={<CodeOutlined />} unCheckedChildren={<CodeOutlined />} defaultChecked={record.wazuh} /> },
               { title: 'Zeek 流量', key: 'zeek', render: (_, record) => <Switch checkedChildren={<WifiOutlined />} unCheckedChildren={<WifiOutlined />} defaultChecked={record.zeek} /> },
-              { title: '状态', render: (_, r) => <Tag color={r.role === 'Victim' ? 'error' : 'success'}>{r.role === 'Victim' ? 'Compromised' : 'Online'}</Tag> },
+              { title: '状态', dataIndex: 'status', render: (status) => {
+                const statusConfig = {
+                  online: { color: 'success', text: 'Online' },
+                  offline: { color: 'default', text: 'Offline' },
+                  suspicious: { color: 'warning', text: 'Suspicious' },
+                  compromised: { color: 'error', text: 'Compromised' }
+                };
+                const config = statusConfig[status?.toLowerCase()] || statusConfig.online;
+                return <Tag color={config.color}>{config.text}</Tag>;
+              }},
             ]} pagination={false} rowClassName={() => 'cyber-table-row'} />
           </Card>
         );

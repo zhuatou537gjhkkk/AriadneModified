@@ -82,12 +82,82 @@ export const getLatestAlerts = async () => {
 
 // ================= 2. 溯源画布 (Investigation) =================
 
-// 获取攻击图谱
+// 获取攻击图谱（已废弃，使用新的攻击链 API）
 export const getAttackGraph = async () => {
     try {
         return await request.get('/investigation/graph');
     } catch (e) {
         return mockGraphData;
+    }
+};
+
+// 【新增】获取攻击链列表
+export const getChainsList = async (timeRange = 24) => {
+    try {
+        const response = await request.get(`/investigation/chains/list?time_range_hours=${timeRange}`);
+        return response;
+    } catch (e) {
+        console.error('获取攻击链列表失败:', e);
+        // Mock 数据作为兜底
+        return {
+            total: 3,
+            chains: [
+                {
+                    id: "chain_0",
+                    name: "cmd.exe → powershell.exe",
+                    severity: "high",
+                    length: 4,
+                    host_id: "192.168.1.10",
+                    timestamp: "2024-01-15 10:00:00",
+                    type: "process_tree",
+                    description: "4 个进程节点"
+                },
+                {
+                    id: "chain_1",
+                    name: "w3wp.exe → cmd.exe",
+                    severity: "high",
+                    length: 3,
+                    host_id: "192.168.1.10",
+                    timestamp: "2024-01-15 09:45:00",
+                    type: "process_tree",
+                    description: "3 个进程节点"
+                },
+                {
+                    id: "network_0",
+                    name: "192.168.1.5 ⇄ 114.114.114.114",
+                    severity: "high",
+                    length: 2,
+                    host_id: "Network",
+                    timestamp: "2024-01-15 10:05:00",
+                    type: "network_connection",
+                    description: "2 跳网络连接"
+                }
+            ]
+        };
+    }
+};
+
+// 【新增】获取单个攻击链的图谱
+export const getSingleChainGraph = async (chainId, timeRange = 24) => {
+    try {
+        const response = await request.get(`/investigation/chains/${chainId}?time_range_hours=${timeRange}`);
+        return response;
+    } catch (e) {
+        console.error('获取攻击链图谱失败:', e);
+        // Mock 数据作为兜底
+        return {
+            nodes: [
+                { id: "proc_1_cmd.exe", name: "cmd.exe (PID:1)", category: "Process", details: "Spawned by explorer.exe", level: 1 },
+                { id: "proc_2_powershell.exe", name: "powershell.exe (PID:2)", category: "Process", details: "Suspicious script execution", level: 2 },
+                { id: "ip_192.168.1.5", name: "192.168.1.5", category: "IP", details: "Internal host", level: 3 },
+                { id: "ip_114.114.114.114", name: "114.114.114.114", category: "External_IP", details: "External C2 server", level: 4 }
+            ],
+            links: [
+                { source: "proc_1_cmd.exe", target: "proc_2_powershell.exe", label: "SPAWNED" },
+                { source: "proc_2_powershell.exe", target: "ip_192.168.1.5", label: "CONNECTED_FROM" },
+                { source: "ip_192.168.1.5", target: "ip_114.114.114.114", label: "CONNECTED_TO" }
+            ]
+        };
     }
 };
 
@@ -129,3 +199,19 @@ export const getAttributionResult = async () => {
         };
     }
 };
+
+// === 攻击叙事线功能已禁用 ===
+// export const getAttackStoryline = async () => {
+//     try {
+//         return await request.get(`/investigation/storyline${noCache()}`);
+//     } catch (e) {
+//         return [
+//             { time: '09:59:00', content: '正常业务流量基线建立完毕', type: 'info' },
+//             { time: '10:00:01', content: '检测到 WebShell 访问 (192.168.1.5)', type: 'danger' },
+//             { time: '10:02:15', content: '执行可疑 PowerShell 脚本', type: 'warning' },
+//             { time: '10:05:30', content: '向恶意 C2 (114.x.x.x) 发起连接', type: 'danger' }
+//         ];
+//     }
+// };
+
+

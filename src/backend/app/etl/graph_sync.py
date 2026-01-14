@@ -146,6 +146,9 @@ class GraphSync:
         # 特殊处理Process节点：PID重用检测 + 属性选择性更新
         if node_type == "Process":
             self._create_or_update_process_node(session, node_id, clean_props)
+        elif node_type == "Host":
+            # 特殊处理Host节点：同时自动创建/更新对应的Asset节点
+            self._create_or_update_host_and_asset(session, node_id, labels_str, clean_props)
         else:
             # 其他节点类型使用标准MERGE逻辑
             query = f"""
@@ -212,8 +215,114 @@ class GraphSync:
                 file_hash=clean_props.get("file_hash"),
                 event_id=clean_props.get("event_id")
             )
+            
+            # 从 Process 节点中提取主机信息，触发资产自动发现
+            host_id = clean_props.get("host_id")
+            if host_id:
+                self._auto_discover_asset_from_process(
+                    session, 
+                    host_id, 
+                    clean_props.get("host_name"),
+                    clean_props.get("host_ip")  # 从 Process 节点获取 host_ip
+                )
+                
         except Exception as e:
             logger.error(f"创建/更新Process节点失败: {str(e)}")
+
+    def _create_or_update_host_and_asset(self, session, node_id: str, labels_str: str, clean_props: Dict):
+        """
+        创建或更新 Host 节点，并自动同步到 Asset 节点（资产自动发现）
+        
+        当 ETL 处理日志时发现新的主机，会：
+        1. 创建/更新 Host 节点
+        2. 自动检查是否存在对应的 Asset 节点
+        3. 如果不存在，自动创建 Asset 节点（资产自动发现）
+        4. 如果已存在，更新 last_seen 和 status
+        
+        Args:
+            session: Neo4j session
+            node_id: Host 节点 ID
+            labels_str: 标签字符串
+            clean_props: 清理后的属性字典
+        """
+        # 1. 创建/更新 Host 节点
+        host_query = f"""
+        MERGE (n:{labels_str} {{id: $id}})
+        SET n += $properties
+        SET n.last_updated = datetime()
+        """
+        try:
+            session.run(host_query, id=node_id, properties=clean_props)
+        except Exception as e:
+            logger.error(f"创建Host节点失败: {str(e)}")
+            return
+        
+        # 2. 自动同步到 Asset 节点（资产自动发现）
+        host_id = clean_props.get("host_id")
+        host_name = clean_props.get("host_name")
+        host_ip = clean_props.get("host_ip")
+        
+        self._auto_discover_asset_from_process(session, host_id, host_name, host_ip)
+    
+    def _auto_discover_asset_from_process(self, session, host_id: str, host_name: str, host_ip: str):
+        """
+        从进程或主机信息中自动发现资产
+        
+        Args:
+            session: Neo4j session
+            host_id: 主机 ID
+            host_name: 主机名
+            host_ip: 主机 IP（可选）
+        """
+        if not host_id:
+            return  # 没有 host_id 无法创建 Asset
+        
+        # 推断角色：根据主机名推断角色类型
+        role = "Victim"  # 默认角色
+        name_lower = (host_name or "").lower()
+        if any(keyword in name_lower for keyword in ["server", "srv", "dc", "ad-", "db-", "web", "mail", "file"]):
+            role = "Server"
+        elif any(keyword in name_lower for keyword in ["sensor", "zeek", "suricata", "snort", "fusion"]):
+            role = "Sensor"
+        elif any(keyword in name_lower for keyword in ["attacker", "kali", "attack"]):
+            role = "Attacker"
+        
+        # 检查并创建/更新 Asset 节点（使用 key 作为唯一标识）
+        # 使用 host_id 作为 key，确保与约束一致
+        asset_key = f"auto_{host_id}"  # 添加前缀区分自动发现的资产
+        
+        asset_query = """
+        MERGE (a:Asset {key: $key})
+        ON CREATE SET 
+            a.host_id = $host_id,
+            a.name = $name,
+            a.ip = $ip,
+            a.role = $role,
+            a.wazuh = true,
+            a.zeek = false,
+            a.status = 'online',
+            a.last_seen = datetime(),
+            a.created_at = datetime(),
+            a.auto_discovered = true
+        ON MATCH SET 
+            a.name = COALESCE($name, a.name),
+            a.ip = COALESCE($ip, a.ip),
+            a.last_seen = datetime(),
+            a.status = 'online'
+        """
+        
+        try:
+            session.run(
+                asset_query,
+                key=asset_key,
+                host_id=host_id,
+                name=host_name or f"Host-{host_id}",
+                ip=host_ip or "Unknown",
+                role=role
+            )
+            logger.info(f"资产自动发现: {host_name} ({host_ip}) - 角色: {role}")
+        except Exception as e:
+            logger.error(f"自动发现资产失败: {str(e)}")
 
     def _create_relationship(self, session, edge: Dict):
         """
@@ -344,6 +453,7 @@ class GraphSync:
             "CREATE CONSTRAINT IF NOT EXISTS FOR (i:IP) REQUIRE i.id IS UNIQUE",
             "CREATE CONSTRAINT IF NOT EXISTS FOR (d:Domain) REQUIRE d.id IS UNIQUE",
             "CREATE CONSTRAINT IF NOT EXISTS FOR (h:Host) REQUIRE h.id IS UNIQUE",
+            "CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.key IS UNIQUE",
         ]
 
         logger.info("开始创建 Neo4j 约束...")
@@ -371,6 +481,10 @@ class GraphSync:
             "CREATE INDEX IF NOT EXISTS FOR (i:IP) ON (i.ip_address)",
             "CREATE INDEX IF NOT EXISTS FOR (d:Domain) ON (d.domain)",
             "CREATE INDEX IF NOT EXISTS FOR (h:Host) ON (h.host_id)",
+            "CREATE INDEX IF NOT EXISTS FOR (a:Asset) ON (a.name)",
+            "CREATE INDEX IF NOT EXISTS FOR (a:Asset) ON (a.ip)",
+            "CREATE INDEX IF NOT EXISTS FOR (a:Asset) ON (a.role)",
+            "CREATE INDEX IF NOT EXISTS FOR (a:Asset) ON (a.status)",
         ]
 
         logger.info("开始创建 Neo4j 索引...")

@@ -12,6 +12,7 @@ from app.core.database import db
 from app.etl.etl_pipeline import ETLPipeline
 from app.analysis.analysis_pipeline import AnalysisPipeline
 from app.api.websocket import manager as ws_manager
+from app.api.endpoints import init_default_assets
 
 logger = logging.getLogger("FusionTrace.Main")
 
@@ -108,6 +109,14 @@ async def lifespan(app: FastAPI):
         db.connect()  # 连接 Neo4j
     except Exception as e:
         print(f"[!] Database connection failed: {e}")
+
+    # 初始化默认资产数据
+    print("[+] Initializing default assets...")
+    try:
+        await init_default_assets()
+        print("[+] Default assets initialized successfully")
+    except Exception as e:
+        print(f"[!] Failed to initialize default assets: {e}")
 
     # 启动后台任务
     print("[+] Starting background tasks...")

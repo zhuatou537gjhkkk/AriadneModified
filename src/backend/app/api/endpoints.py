@@ -58,24 +58,47 @@ async def get_dashboard_summary():
     }
     """
     try:
+        # ============ 1. 计算活跃威胁数 ============
         # 使用分析模块获取攻击链统计
         attack_chains = chain_builder.build_attack_chain(time_range_hours=24)
         lateral_movements = chain_builder.find_lateral_movement(time_range_hours=24)
         data_exfiltrations = chain_builder.find_data_exfiltration()
         
-        # 计算活跃威胁数 = 攻击链数 + 横向移动数 + 外泄事件数
+        # 活跃威胁数 = 攻击链数 + 横向移动数 + 外泄事件数
         active_threats = (
             attack_chains.get("total_count", 0) +
             len(lateral_movements) +
             len(data_exfiltrations)
         )
         
+        # ============ 2. 计算今日拦截告警数 ============
+        # 统计今日检测到的所有攻击模式数量
+        reverse_shells = graph_algo.find_attack_patterns("reverse_shell")
+        cred_dumps = graph_algo.find_attack_patterns("credential_dump")
+        lateral_moves = graph_algo.find_attack_patterns("lateral_movement")
+        webshells = graph_algo.find_attack_patterns("webshell")
+        
+        intercepted_today = (
+            len(reverse_shells) +
+            len(cred_dumps) +
+            len(lateral_moves) +
+            len(webshells)
+        )
+        
+        # ============ 3. 计算数据吞吐量 EPS ============
+        # 查询最近 60 秒内新增的事件数量，计算 EPS
+        throughput_eps = _calculate_throughput_eps()
+        
+        # ============ 4. 计算时间同步偏差 ============
+        # 比较数据库最新事件时间与当前系统时间
+        time_sync_offset = _calculate_time_sync_offset()
+        
         # 严格按前端期望格式返回（仅 4 个字段，无额外数据）
         return {
             "active_threats": active_threats,
-            "intercepted_today": active_threats * 45,  # 模拟每个威胁产生 45 条告警
-            "throughput_eps": 4600,  # 每秒事件数
-            "time_sync_offset": 12  # 时间偏差 (ms)
+            "intercepted_today": intercepted_today,
+            "throughput_eps": throughput_eps,
+            "time_sync_offset": time_sync_offset
         }
     except Exception as e:
         logger.error(f"获取态势总览失败: {str(e)}")
@@ -88,16 +111,217 @@ async def get_dashboard_summary():
         }
 
 
+def _calculate_throughput_eps() -> int:
+    """
+    计算数据吞吐量（每秒事件数 EPS）
+    
+    优先查询最近 60 秒的实时数据；
+    如果没有实时数据，则基于数据库中所有数据的实际时间跨度计算平均 EPS
+    
+    Returns:
+        int: 每秒事件数
+    """
+    try:
+        session = db.get_session()
+        try:
+            # ============ 策略 1: 查询最近 60 秒的实时数据 ============
+            now = datetime.now()
+            one_minute_ago = now - timedelta(seconds=60)
+            
+            # 查询最近 60 秒内更新的节点和关系数量
+            recent_query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL 
+              AND n.last_updated >= datetime($since_time)
+            WITH count(n) as recent_nodes
+            MATCH ()-[r]->()
+            WHERE r.last_updated IS NOT NULL 
+              AND r.last_updated >= datetime($since_time)
+            RETURN recent_nodes, count(r) as recent_rels
+            """
+            
+            recent_result = session.run(recent_query, since_time=one_minute_ago.isoformat())
+            recent_record = recent_result.single()
+            
+            if recent_record:
+                recent_nodes = recent_record["recent_nodes"] or 0
+                recent_rels = recent_record["recent_rels"] or 0
+                total_events = recent_nodes + recent_rels
+                
+                if total_events > 0:
+                    eps = total_events // 60
+                    logger.info(f"EPS 计算（实时）- 最近节点: {recent_nodes}, 最近关系: {recent_rels}, EPS: {eps}")
+                    return eps
+            
+            # ============ 策略 2: 基于历史数据的实际时间跨度计算 ============
+            # 查询数据库中最早和最晚的时间戳
+            timespan_query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL
+            WITH n.last_updated as ts
+            ORDER BY ts
+            WITH collect(ts) as timestamps
+            WHERE size(timestamps) > 0
+            RETURN timestamps[0] as earliest, timestamps[-1] as latest
+            """
+            
+            timespan_result = session.run(timespan_query)
+            timespan_record = timespan_result.single()
+            
+            if timespan_record and timespan_record["earliest"] and timespan_record["latest"]:
+                earliest = timespan_record["earliest"]
+                latest = timespan_record["latest"]
+                
+                # 解析时间戳
+                def parse_neo4j_time(ts):
+                    if hasattr(ts, 'to_native'):
+                        native = ts.to_native()
+                        return native.astimezone().replace(tzinfo=None) if hasattr(native, 'astimezone') else native
+                    elif isinstance(ts, str):
+                        return datetime.fromisoformat(ts.replace('Z', '+00:00').split('+')[0].split('.')[0])
+                    elif isinstance(ts, datetime):
+                        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+                    return None
+                
+                earliest_dt = parse_neo4j_time(earliest)
+                latest_dt = parse_neo4j_time(latest)
+                
+                if earliest_dt and latest_dt:
+                    # 计算实际时间跨度（秒）
+                    time_span_seconds = (latest_dt - earliest_dt).total_seconds()
+                    
+                    if time_span_seconds > 0:
+                        # 查询总数据量
+                        count_query = """
+                        MATCH (n) 
+                        WITH count(n) as nodes
+                        MATCH ()-[r]->()
+                        RETURN nodes, count(r) as rels
+                        """
+                        count_result = session.run(count_query)
+                        count_record = count_result.single()
+                        
+                        if count_record:
+                            total_nodes = count_record["nodes"] or 0
+                            total_rels = count_record["rels"] or 0
+                            total_data = total_nodes + total_rels
+                            
+                            # 基于实际时间跨度计算平均 EPS
+                            eps = int(total_data / time_span_seconds)
+                            logger.info(f"EPS 计算（历史）- 总数据: {total_data}, 时间跨度: {time_span_seconds}秒, EPS: {eps}")
+                            return max(1, eps)  # 至少返回 1
+            
+            # ============ 策略 3: 降级处理 ============
+            # 如果以上都失败，返回一个基于总数据量的保守估计
+            fallback_query = """
+            MATCH (n) 
+            WITH count(n) as nodes
+            MATCH ()-[r]->()
+            RETURN nodes, count(r) as rels
+            """
+            fallback_result = session.run(fallback_query)
+            fallback_record = fallback_result.single()
+            
+            if fallback_record:
+                total_data = (fallback_record["nodes"] or 0) + (fallback_record["rels"] or 0)
+                
+                # 如果有大量数据，说明系统在运行，给一个合理的估算
+                if total_data > 1000:
+                    # 假设数据在 1 小时内采集（更合理的估计）
+                    eps = max(10, total_data // 3600)  # 至少返回 10 EPS
+                elif total_data > 0:
+                    # 数据量很少，可能刚启动
+                    eps = max(1, total_data // 600)  # 假设在 10 分钟内采集
+                else:
+                    eps = 0
+                
+                logger.info(f"EPS 计算（降级）- 总数据: {total_data}, 估算 EPS: {eps}")
+                return eps
+            
+            return 0
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"计算 EPS 失败: {str(e)}", exc_info=True)
+        return 0
+
+
+def _calculate_time_sync_offset() -> int:
+    """
+    计算时间同步偏差（毫秒）
+    
+    反映数据新鲜度：当前时间 - 最新事件时间
+    - 如果偏差小，说明数据流是实时的
+    - 如果偏差大，说明 ETL 延迟或没有新数据
+    
+    Returns:
+        int: 时间偏差（毫秒）
+    """
+    try:
+        session = db.get_session()
+        try:
+            now = datetime.now()
+            
+            # 查询数据库中最新的时间戳
+            query = """
+            MATCH (n)
+            WHERE n.last_updated IS NOT NULL
+            RETURN n.last_updated as ts
+            ORDER BY n.last_updated DESC
+            LIMIT 1
+            """
+            
+            result = session.run(query)
+            record = result.single()
+            
+            if record and record["ts"]:
+                ts = record["ts"]
+                
+                # 解析数据库时间戳
+                def parse_neo4j_time(ts):
+                    if hasattr(ts, 'to_native'):
+                        native = ts.to_native()
+                        return native.astimezone().replace(tzinfo=None) if hasattr(native, 'astimezone') else native
+                    elif isinstance(ts, str):
+                        return datetime.fromisoformat(ts.replace('Z', '+00:00').split('+')[0].split('.')[0])
+                    elif isinstance(ts, datetime):
+                        return ts.replace(tzinfo=None) if ts.tzinfo else ts
+                    return None
+                
+                db_time = parse_neo4j_time(ts)
+                
+                if db_time:
+                    # 计算时间差（毫秒）- 显示实际偏差
+                    time_diff = (now - db_time).total_seconds() * 1000
+                    
+                    # 如果时间差为负数（未来时间），说明有时钟偏差
+                    time_diff_abs = abs(time_diff)
+                    
+                    logger.info(f"时间同步偏差: {int(time_diff_abs)} ms (数据时间: {db_time}, 当前时间: {now})")
+                    return int(time_diff_abs)
+            
+            # 数据库完全为空
+            logger.warning("时间同步偏差计算失败：数据库无数据")
+            return 0
+                
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"计算时间同步偏差失败: {str(e)}", exc_info=True)
+        return 0
+
+
 @router.get("/dashboard/traffic-trend")
-async def get_traffic_trend(hours: int = 1):
+async def get_traffic_trend(hours: float = 0.33):
     """
     获取流量趋势数据（用于 TrafficTrend 组件）
-    
+
     从数据库查询真实的事件数据，按时间段统计 Zeek（网络）和 Wazuh（端点）的事件数量。
     
     参数:
-    - hours: 时间范围（小时），默认为1小时
-    
+    - hours: 时间范围（小时），默认为0.33小时（20分钟）
+
     返回:
     - categories: 时间点数组
     - series: 各数据源的流量趋势
@@ -635,6 +859,256 @@ async def explore_graph_node(node_id: str):
         return {"nodes": [], "links": [], "error": str(e)}
 
 
+@router.get("/investigation/chains/list")
+async def get_attack_chains_list(time_range_hours: int = Query(24, ge=1, le=720)):
+    """
+    获取攻击链列表（摘要信息）
+    
+    Args:
+        time_range_hours: 时间范围（小时）
+    
+    返回:
+        {
+            "total": int,
+            "chains": [
+                {
+                    "id": "chain_0",
+                    "name": "cmd.exe → powershell.exe",
+                    "severity": "high",
+                    "length": 4,
+                    "host_id": "host1",
+                    "timestamp": "2024-01-01 10:00:00",
+                    "type": "process_tree"
+                }
+            ]
+        }
+    """
+    try:
+        # 获取所有攻击链
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        chains = attack_chains.get("chains", [])
+        network_connections = attack_chains.get("network_connections", [])
+        
+        # 构建进程链摘要列表
+        chain_list = []
+        for idx, chain in enumerate(chains):
+            chain_nodes = chain.get("chain", [])
+            if not chain_nodes or len(chain_nodes) < 2:
+                continue
+            
+            # 生成攻击链名称（根据起点和终点进程）
+            first_process = chain_nodes[0].get("name", "Unknown")
+            last_process = chain_nodes[-1].get("name", "Unknown")
+            chain_name = f"{first_process} → {last_process}"
+            
+            # 计算严重程度（基于链长度和危险进程）
+            dangerous_procs = ['powershell.exe', 'cmd.exe', 'mimikatz.exe', 'psexec.exe', 
+                             'nc.exe', 'regsvr32.exe', 'rundll32.exe', 'wscript.exe', 'cscript.exe']
+            has_dangerous = any(n.get("name") in dangerous_procs for n in chain_nodes)
+            severity = "high" if (has_dangerous and len(chain_nodes) >= 3) else "medium" if has_dangerous else "low"
+            
+            # 获取时间戳
+            first_seen = chain_nodes[0].get("first_seen")
+            timestamp = first_seen if first_seen else "Unknown"
+            
+            chain_list.append({
+                "id": f"chain_{idx}",
+                "name": chain_name,
+                "severity": severity,
+                "length": chain.get("chain_length", len(chain_nodes)),
+                "host_id": chain.get("host_id", "Unknown"),
+                "timestamp": timestamp,
+                "type": chain.get("type", "process_tree"),
+                "description": f"{len(chain_nodes)} 个进程节点"
+            })
+        
+        # 添加网络连接链
+        for idx, conn in enumerate(network_connections):
+            path = conn.get("path", [])
+            if not path or len(path) < 2:
+                continue
+            
+            # 生成网络连接链名称
+            first_ip = path[0].get("ip_address", "Unknown")
+            last_ip = path[-1].get("ip_address", "Unknown")
+            chain_name = f"{first_ip} ⇄ {last_ip}"
+            
+            # 检查是否连接到外部 IP
+            has_external = any(not node.get("is_private", True) for node in path)
+            severity = "high" if has_external else "medium"
+            
+            chain_list.append({
+                "id": f"network_{idx}",
+                "name": chain_name,
+                "severity": severity,
+                "length": len(path),
+                "host_id": "Network",
+                "timestamp": conn.get("timestamp", "Unknown"),
+                "type": "network_connection",
+                "description": f"{len(path)} 跳网络连接"
+            })
+        
+        # 按严重程度和时间排序
+        severity_order = {"high": 0, "medium": 1, "low": 2}
+        chain_list.sort(key=lambda x: (severity_order.get(x["severity"], 3), x["timestamp"]), reverse=True)
+        
+        logger.info(f"返回 {len(chain_list)} 个攻击链摘要")
+        
+        return {
+            "total": len(chain_list),
+            "chains": chain_list
+        }
+    except Exception as e:
+        logger.error(f"获取攻击链列表失败: {str(e)}", exc_info=True)
+        return {"total": 0, "chains": [], "error": str(e)}
+
+
+@router.get("/investigation/chains/{chain_id}")
+async def get_single_chain_graph(chain_id: str, time_range_hours: int = Query(24, ge=1, le=720)):
+    """
+    获取单个攻击链的完整图谱数据
+    
+    Args:
+        chain_id: 攻击链ID（格式：chain_0, chain_1... 或 network_0, network_1...）
+        time_range_hours: 时间范围（小时）
+    
+    返回:
+        {
+            "nodes": [...],
+            "links": [...],
+            "metadata": {
+                "chain_id": "chain_0",
+                "chain_length": 4,
+                "chain_type": "process_tree"
+            }
+        }
+    """
+    try:
+        # 解析 chain_id
+        id_parts = chain_id.split("_")
+        if len(id_parts) != 2:
+            return {"nodes": [], "links": [], "error": "Invalid chain_id format"}
+        
+        chain_type = id_parts[0]  # "chain" 或 "network"
+        chain_index = int(id_parts[1])
+        
+        # 获取所有攻击链
+        attack_chains = chain_builder.build_attack_chain(time_range_hours=time_range_hours)
+        
+        nodes = []
+        links = []
+        metadata = {}
+        
+        if chain_type == "chain":
+            # 进程链
+            chains = attack_chains.get("chains", [])
+            
+            if chain_index >= len(chains):
+                return {"nodes": [], "links": [], "error": "Chain not found"}
+            
+            # 获取指定的攻击链
+            target_chain = chains[chain_index]
+            chain_nodes = target_chain.get("chain", [])
+            edges = target_chain.get("edges", [])
+            
+            # 构建节点
+            for i, node in enumerate(chain_nodes):
+                node_id = f"proc_{node.get('pid')}_{node.get('name')}"
+                nodes.append({
+                    "id": node_id,
+                    "name": f"{node.get('name')} (PID:{node.get('pid')})",
+                    "label": f"{node.get('name')} (PID:{node.get('pid')})",
+                    "category": "Process",
+                    "details": f"Path: {node.get('path', 'N/A')}\nCmd: {node.get('command', 'N/A')}\nFirst Seen: {node.get('first_seen', 'N/A')}",
+                    "level": i + 1,
+                    "symbolSize": 35
+                })
+                
+                # 添加边
+                if i > 0:
+                    prev_node = chain_nodes[i - 1]
+                    prev_id = f"proc_{prev_node.get('pid')}_{prev_node.get('name')}"
+                    links.append({
+                        "source": prev_id,
+                        "target": node_id,
+                        "label": "SPAWNED",
+                        "timestamp": edges[i-1].get("timestamp") if i-1 < len(edges) else None,
+                        "value": 3
+                    })
+            
+            metadata = {
+                "chain_id": chain_id,
+                "chain_length": len(nodes),
+                "chain_type": target_chain.get("type", "process_tree"),
+                "host_id": target_chain.get("host_id", "Unknown")
+            }
+            
+        elif chain_type == "network":
+            # 网络连接链
+            network_connections = attack_chains.get("network_connections", [])
+            
+            if chain_index >= len(network_connections):
+                return {"nodes": [], "links": [], "error": "Network connection not found"}
+            
+            # 获取指定的网络连接
+            target_conn = network_connections[chain_index]
+            path = target_conn.get("path", [])
+            conn_edges = target_conn.get("edges", [])
+            
+            # 构建节点
+            for i, node in enumerate(path):
+                ip = node.get("ip_address")
+                if ip:
+                    node_id = f"ip_{ip}"
+                    is_private = node.get("is_private", True)
+                    nodes.append({
+                        "id": node_id,
+                        "name": ip,
+                        "label": ip,
+                        "category": "IP" if is_private else "External_IP",
+                        "details": f"Type: {'Internal' if is_private else 'External'}\nLocation: {node.get('location', 'Unknown')}",
+                        "level": i + 1,
+                        "symbolSize": 40 if not is_private else 35
+                    })
+            
+            # 添加边（多跳）
+            for i in range(len(path) - 1):
+                src_ip = path[i].get("ip_address")
+                dst_ip = path[i + 1].get("ip_address")
+                if src_ip and dst_ip:
+                    edge_info = conn_edges[i] if i < len(conn_edges) else {}
+                    links.append({
+                        "source": f"ip_{src_ip}",
+                        "target": f"ip_{dst_ip}",
+                        "label": "CONNECTED_TO",
+                        "port": edge_info.get("dst_port"),
+                        "protocol": edge_info.get("protocol"),
+                        "bytes": edge_info.get("bytes_sent", 0),
+                        "value": 3
+                    })
+            
+            metadata = {
+                "chain_id": chain_id,
+                "chain_length": len(nodes),
+                "chain_type": "network_connection",
+                "total_bytes": sum(e.get("bytes_sent", 0) for e in conn_edges)
+            }
+        else:
+            return {"nodes": [], "links": [], "error": "Invalid chain type"}
+        
+        logger.info(f"返回攻击链 {chain_id} 的图谱数据: {len(nodes)} 节点, {len(links)} 边")
+        
+        return {
+            "nodes": nodes,
+            "links": links,
+            "metadata": metadata
+        }
+        
+    except Exception as e:
+        logger.error(f"获取单个攻击链失败: {str(e)}", exc_info=True)
+        return {"nodes": [], "links": [], "error": str(e)}
+
+
 # ==========================================
 # 5. ATT&CK 战术分析
 # ==========================================
@@ -733,61 +1207,339 @@ async def get_attack_highlights(time_range_hours: int = 24):
 # 6. 资产管理 (Assets & Sensors)
 # ==========================================
 
+# 默认资产数据（用于初始化数据库）
+DEFAULT_ASSETS = [
+    {
+        "key": "1",
+        "name": "FusionTrace-Server",
+        "ip": "192.168.1.2",
+        "role": "Server",
+        "wazuh": True,
+        "zeek": True,
+        "status": "online"
+    },
+    {
+        "key": "2",
+        "name": "Zeek-Sensor-01",
+        "ip": "192.168.1.3",
+        "role": "Sensor",
+        "wazuh": True,
+        "zeek": True,
+        "status": "online"
+    },
+    {
+        "key": "3",
+        "name": "Victim-Host",
+        "ip": "192.168.1.10",
+        "role": "Victim",
+        "wazuh": True,
+        "zeek": False,
+        "status": "online"
+    },
+    {
+        "key": "4",
+        "name": "Attacker-VM",
+        "ip": "192.168.1.20",
+        "role": "Attacker",
+        "wazuh": False,
+        "zeek": False,
+        "status": "suspicious"
+    }
+]
+
+
+async def init_default_assets():
+    """
+    初始化默认资产数据到 Neo4j
+    如果数据库中没有 Asset 节点，则创建默认资产
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 检查是否已存在 Asset 节点
+            check_query = "MATCH (a:Asset) RETURN count(a) as count"
+            result = session.run(check_query)
+            record = result.single()
+            
+            if record and record["count"] > 0:
+                logger.info(f"数据库中已存在 {record['count']} 个资产，跳过初始化")
+                return
+            
+            # 创建 Asset 节点约束（如果不存在）
+            try:
+                session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.key IS UNIQUE")
+                logger.info("Asset 节点约束创建成功")
+            except Exception as e:
+                logger.warning(f"创建 Asset 约束失败（可能已存在）: {str(e)}")
+            
+            # 插入默认资产
+            for asset in DEFAULT_ASSETS:
+                create_query = """
+                CREATE (a:Asset {
+                    key: $key,
+                    name: $name,
+                    ip: $ip,
+                    role: $role,
+                    wazuh: $wazuh,
+                    zeek: $zeek,
+                    status: $status,
+                    last_seen: datetime(),
+                    created_at: datetime()
+                })
+                """
+                session.run(create_query, **asset)
+            
+            logger.info(f"成功初始化 {len(DEFAULT_ASSETS)} 个默认资产")
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"初始化默认资产失败: {str(e)}")
+
+
 @router.get("/assets")
 async def get_assets_list():
     """
-    获取资产和传感器列表
+    获取资产和传感器列表（从 Neo4j 数据库查询）
     
     返回:
+    - key: 资产唯一标识
     - name: 资产名称
     - ip: IP 地址
-    - role: 角色 (Server/Sensor/Victim)
+    - role: 角色 (Server/Sensor/Victim/Attacker)
     - wazuh: 是否部署 Wazuh 日志采集
     - zeek: 是否部署网络传感器
-    - status: 连接状态
+    - status: 连接状态 (online/offline/suspicious/compromised)
+    - last_seen: 最后在线时间
     """
-    return [
-        {
-            "key": "1",
-            "name": "FusionTrace-Server",
-            "ip": "192.168.1.2",
-            "role": "Server",
-            "wazuh": True,
-            "zeek": True,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "2",
-            "name": "Zeek-Sensor-01",
-            "ip": "192.168.1.3",
-            "role": "Sensor",
-            "wazuh": True,
-            "zeek": True,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "3",
-            "name": "Victim-Host",
-            "ip": "192.168.1.10",
-            "role": "Victim",
-            "wazuh": True,
-            "zeek": False,
-            "status": "online",
-            "last_seen": datetime.now().isoformat()
-        },
-        {
-            "key": "4",
-            "name": "Attacker-VM",
-            "ip": "192.168.1.20",
-            "role": "Attacker",
-            "wazuh": False,
-            "zeek": False,
-            "status": "suspicious",
-            "last_seen": datetime.now().isoformat()
-        }
-    ]
+    try:
+        session = db.get_session()
+        try:
+            query = """
+            MATCH (a:Asset)
+            RETURN a.key as key,
+                   a.name as name,
+                   a.ip as ip,
+                   a.role as role,
+                   a.wazuh as wazuh,
+                   a.zeek as zeek,
+                   a.status as status,
+                   a.last_seen as last_seen
+            ORDER BY a.key
+            """
+            result = session.run(query)
+            
+            assets = []
+            for record in result:
+                last_seen = record["last_seen"]
+                # 处理 Neo4j datetime 类型
+                if hasattr(last_seen, 'to_native'):
+                    last_seen = last_seen.to_native().isoformat()
+                elif last_seen is None:
+                    last_seen = datetime.now().isoformat()
+                
+                assets.append({
+                    "key": record["key"],
+                    "name": record["name"],
+                    "ip": record["ip"],
+                    "role": record["role"],
+                    "wazuh": record["wazuh"],
+                    "zeek": record["zeek"],
+                    "status": record["status"],
+                    "last_seen": last_seen
+                })
+            
+            # 如果数据库中没有资产，返回默认值
+            if not assets:
+                logger.warning("数据库中没有资产数据，返回默认资产列表")
+                return [
+                    {**asset, "last_seen": datetime.now().isoformat()}
+                    for asset in DEFAULT_ASSETS
+                ]
+            
+            return assets
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"获取资产列表失败: {str(e)}")
+        # 异常时返回默认值
+        return [
+            {**asset, "last_seen": datetime.now().isoformat()}
+            for asset in DEFAULT_ASSETS
+        ]
+
+
+@router.post("/assets")
+async def create_asset(asset: Dict[str, Any]):
+    """
+    创建新资产
+    
+    请求体:
+    - name: 资产名称（必填）
+    - ip: IP 地址（必填）
+    - role: 角色 (Server/Sensor/Victim/Attacker)（必填）
+    - wazuh: 是否部署 Wazuh（可选，默认 False）
+    - zeek: 是否部署 Zeek（可选，默认 False）
+    - status: 状态（可选，默认 online）
+    """
+    try:
+        # 验证必填字段
+        required_fields = ["name", "ip", "role"]
+        for field in required_fields:
+            if field not in asset:
+                raise HTTPException(status_code=400, detail=f"缺少必填字段: {field}")
+        
+        session = db.get_session()
+        try:
+            # 生成新的 key（查询最大 key 值）
+            max_key_query = "MATCH (a:Asset) RETURN max(toInteger(a.key)) as max_key"
+            result = session.run(max_key_query)
+            record = result.single()
+            new_key = str((record["max_key"] or 0) + 1)
+            
+            # 创建资产
+            create_query = """
+            CREATE (a:Asset {
+                key: $key,
+                name: $name,
+                ip: $ip,
+                role: $role,
+                wazuh: $wazuh,
+                zeek: $zeek,
+                status: $status,
+                last_seen: datetime(),
+                created_at: datetime()
+            })
+            RETURN a.key as key
+            """
+            
+            result = session.run(
+                create_query,
+                key=new_key,
+                name=asset["name"],
+                ip=asset["ip"],
+                role=asset["role"],
+                wazuh=asset.get("wazuh", False),
+                zeek=asset.get("zeek", False),
+                status=asset.get("status", "online")
+            )
+            
+            record = result.single()
+            logger.info(f"创建资产成功: {asset['name']} (key: {new_key})")
+            
+            return {"success": True, "key": new_key, "message": "资产创建成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"创建资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"创建资产失败: {str(e)}")
+
+
+@router.put("/assets/{asset_key}")
+async def update_asset(asset_key: str, asset: Dict[str, Any]):
+    """
+    更新资产信息
+    
+    路径参数:
+    - asset_key: 资产唯一标识
+    
+    请求体（所有字段可选）:
+    - name: 资产名称
+    - ip: IP 地址
+    - role: 角色
+    - wazuh: 是否部署 Wazuh
+    - zeek: 是否部署 Zeek
+    - status: 状态
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 构建动态更新语句
+            set_clauses = []
+            params = {"key": asset_key}
+            
+            field_mapping = {
+                "name": "a.name = $name",
+                "ip": "a.ip = $ip",
+                "role": "a.role = $role",
+                "wazuh": "a.wazuh = $wazuh",
+                "zeek": "a.zeek = $zeek",
+                "status": "a.status = $status"
+            }
+            
+            for field, clause in field_mapping.items():
+                if field in asset:
+                    set_clauses.append(clause)
+                    params[field] = asset[field]
+            
+            if not set_clauses:
+                raise HTTPException(status_code=400, detail="没有提供需要更新的字段")
+            
+            # 添加 last_seen 更新
+            set_clauses.append("a.last_seen = datetime()")
+            
+            update_query = f"""
+            MATCH (a:Asset {{key: $key}})
+            SET {", ".join(set_clauses)}
+            RETURN a.key as key
+            """
+            
+            result = session.run(update_query, **params)
+            record = result.single()
+            
+            if not record:
+                raise HTTPException(status_code=404, detail=f"未找到资产: {asset_key}")
+            
+            logger.info(f"更新资产成功: key={asset_key}")
+            return {"success": True, "message": "资产更新成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"更新资产失败: {str(e)}")
+
+
+@router.delete("/assets/{asset_key}")
+async def delete_asset(asset_key: str):
+    """
+    删除资产
+    
+    路径参数:
+    - asset_key: 资产唯一标识
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 删除资产
+            delete_query = """
+            MATCH (a:Asset {key: $key})
+            DELETE a
+            RETURN count(*) as deleted
+            """
+            
+            result = session.run(delete_query, key=asset_key)
+            record = result.single()
+            
+            if record["deleted"] == 0:
+                raise HTTPException(status_code=404, detail=f"未找到资产: {asset_key}")
+            
+            logger.info(f"删除资产成功: key={asset_key}")
+            return {"success": True, "message": "资产删除成功"}
+            
+        finally:
+            session.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除资产失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除资产失败: {str(e)}")
 
 
 # ==========================================
