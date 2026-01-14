@@ -14,6 +14,7 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
     const colorMap = {
         'IP': '#818cf8',
         'Process': '#38bdf8',
+        'Process_Inferred': '#64748b',  // 灰色 - 推断的父进程（无详细日志）
         'File': '#34d399',
         'External_IP': '#f43f5e'
     };
@@ -107,7 +108,55 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
 
     const option = {
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item' },
+        tooltip: { 
+            trigger: 'item',
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: '#334155',
+            borderWidth: 1,
+            padding: [12, 16],
+            textStyle: {
+                color: '#e2e8f0',
+                fontSize: 13
+            },
+            formatter: (params) => {
+                if (params.dataType === 'node') {
+                    const data = params.data;
+                    const name = data.name || '未知';
+                    const category = data.category || '未知';
+                    const details = data.details || '';
+                    
+                    // 将详情文本按换行符分割并格式化
+                    const detailLines = details.split('\n').map(line => {
+                        const [key, ...valueParts] = line.split(':');
+                        const value = valueParts.join(':').trim() || '未知';
+                        return `<div style="margin: 4px 0;"><span style="color: #94a3b8;">${key}:</span> <span style="color: #f1f5f9;">${value}</span></div>`;
+                    }).join('');
+                    
+                    return `
+                        <div style="min-width: 200px;">
+                            <div style="font-size: 15px; font-weight: bold; color: #38bdf8; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 6px;">
+                                ${name}
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <span style="color: #94a3b8;">类型:</span> 
+                                <span style="color: #818cf8; font-weight: 500;">${category}</span>
+                            </div>
+                            ${detailLines}
+                        </div>
+                    `;
+                } else if (params.dataType === 'edge') {
+                    // 边的 tooltip
+                    const data = params.data;
+                    return `
+                        <div>
+                            <span style="color: #94a3b8;">关系:</span> 
+                            <span style="color: #f43f5e;">${data.label || 'SPAWNED'}</span>
+                        </div>
+                    `;
+                }
+                return params.name;
+            }
+        },
         series: [
             {
                 type: 'graph',

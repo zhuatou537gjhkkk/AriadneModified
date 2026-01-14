@@ -36,13 +36,22 @@ from enum import Enum
 # 配置
 # ==========================================
 
-# 日志文件路径
+# 日志文件路径（Linux部署用）
+# LOG_PATHS = {
+#     "wazuh": Path("/var/lib/docker/volumes/single-node_wazuh_logs/_data/alerts/alerts.json"),
+#     "zeek_conn": Path("/home/Ariadne/data/logs/zeek/conn.json"),
+#     "zeek_dns": Path("/home/Ariadne/data/logs/zeek/dns.log"),
+#     "zeek_http": Path("/home/Ariadne/data/logs/zeek/http.log"),
+#     "zeek_files": Path("/home/Ariadne/data/logs/zeek/files.log"),
+# }
+
+# 日志文件路径（Windows本地测试用）
 LOG_PATHS = {
-    "wazuh": Path("/var/lib/docker/volumes/single-node_wazuh_logs/_data/alerts/alerts.json"),
-    "zeek_conn": Path("/home/Ariadne/data/logs/zeek/conn.json"),
-    "zeek_dns": Path("/home/Ariadne/data/logs/zeek/dns.log"),
-    "zeek_http": Path("/home/Ariadne/data/logs/zeek/http.log"),
-    "zeek_files": Path("/home/Ariadne/data/logs/zeek/files.log"),
+    "wazuh": Path("D:/Projects/Python/Courses/Ariadne/data/logs/wazuh/archives.json"),
+    "zeek_conn": Path("D:/Projects/Python/Courses/Ariadne/data/logs/zeek/conn.json"),
+    "zeek_dns": Path("D:/Projects/Python/Courses/Ariadne/data/logs/zeek/dns.log"),
+    "zeek_http": Path("D:/Projects/Python/Courses/Ariadne/data/logs/zeek/http.log"),
+    "zeek_files": Path("D:/Projects/Python/Courses/Ariadne/data/logs/zeek/files.log"),
 }
 
 

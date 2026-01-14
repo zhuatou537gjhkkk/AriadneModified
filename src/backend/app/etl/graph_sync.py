@@ -217,14 +217,15 @@ class GraphSync:
             )
             
             # 从 Process 节点中提取主机信息，触发资产自动发现
-            host_id = clean_props.get("host_id")
-            if host_id:
-                self._auto_discover_asset_from_process(
-                    session, 
-                    host_id, 
-                    clean_props.get("host_name"),
-                    clean_props.get("host_ip")  # 从 Process 节点获取 host_ip
-                )
+            # 【已禁用】资产自动发现功能 - 使用固定的实验环境节点配置
+            # host_id = clean_props.get("host_id")
+            # if host_id:
+            #     self._auto_discover_asset_from_process(
+            #         session, 
+            #         host_id, 
+            #         clean_props.get("host_name"),
+            #         clean_props.get("host_ip")  # 从 Process 节点获取 host_ip
+            #     )
                 
         except Exception as e:
             logger.error(f"创建/更新Process节点失败: {str(e)}")
@@ -258,11 +259,12 @@ class GraphSync:
             return
         
         # 2. 自动同步到 Asset 节点（资产自动发现）
-        host_id = clean_props.get("host_id")
-        host_name = clean_props.get("host_name")
-        host_ip = clean_props.get("host_ip")
-        
-        self._auto_discover_asset_from_process(session, host_id, host_name, host_ip)
+        # 【已禁用】资产自动发现功能 - 使用固定的实验环境节点配置
+        # host_id = clean_props.get("host_id")
+        # host_name = clean_props.get("host_name")
+        # host_ip = clean_props.get("host_ip")
+        # 
+        # self._auto_discover_asset_from_process(session, host_id, host_name, host_ip)
     
     def _auto_discover_asset_from_process(self, session, host_id: str, host_name: str, host_ip: str):
         """

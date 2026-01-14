@@ -1,0 +1,8 @@
+# FusionTrace 攻击模拟脚本依赖
+# Attack Simulation Scripts Dependencies
+
+# SSH 连接库 (必需)
+paramiko>=3.4.0
+
+# HTTP 请求库 (可选，用于 C2 通信模拟)
+requests>=2.31.0

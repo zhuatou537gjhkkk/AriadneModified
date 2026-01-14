@@ -1,2 +1,0 @@
-{"ts": 1768397743.527745, "uid": "D2YTCzGX3BcSTbSyHL", "id.orig_h": "192.168.1.102", "id.orig_p": 54409, "id.resp_h": "8.8.8.8", "id.resp_p": 53, "proto": "udp", "query": "c2.evil-domain.net", "qtype_name": "A", "answers": ["45.67.89.100"]}
-{"ts": 1768397748.531781, "uid": "D2r4XGtL0pphkDU7WB", "id.orig_h": "192.168.1.30", "id.orig_p": 56279, "id.resp_h": "8.8.8.8", "id.resp_p": 53, "proto": "udp", "query": "3tkl3p0mu5gyztoct013vxv9ckbohv3vdy5uo1gy66rpodmb1748493wm8wd.tunnel.evil-domain.net", "qtype_name": "TXT", "answers": ["70.241.29.157"]}

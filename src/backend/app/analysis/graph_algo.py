@@ -91,10 +91,11 @@ class GraphAlgorithms:
         """检测凭据转储: mimikatz, lsass访问"""
         query = """
         MATCH (p:Process)
-        WHERE p.process_name IN ['mimikatz.exe', 'procdump.exe', 'dumpert.exe']
-           OR p.command_line CONTAINS 'lsass'
-           OR p.command_line CONTAINS 'sekurlsa'
-           OR p.command_line CONTAINS 'privilege::debug'
+        WHERE toLower(p.process_name) IN ['mimikatz.exe', 'procdump.exe', 'dumpert.exe', 'procdump64.exe']
+           OR toLower(p.command_line) CONTAINS 'lsass'
+           OR toLower(p.command_line) CONTAINS 'sekurlsa'
+           OR toLower(p.command_line) CONTAINS 'privilege::debug'
+           OR toLower(p.command_line) CONTAINS 'mimikatz'
         RETURN 
             p.pid as pid,
             p.process_name as name,
@@ -129,9 +130,11 @@ class GraphAlgorithms:
         """检测横向移动: PsExec, WMI, PowerShell远程"""
         query = """
         MATCH (p:Process)
-        WHERE p.process_name IN ['psexec.exe', 'wmic.exe', 'winrs.exe']
-           OR (p.process_name = 'powershell.exe' AND p.command_line CONTAINS 'Invoke-Command')
-           OR p.command_line CONTAINS 'psexec'
+        WHERE toLower(p.process_name) IN ['psexec.exe', 'psexec64.exe', 'psexesvc.exe', 'wmic.exe', 'winrs.exe']
+           OR (toLower(p.process_name) = 'powershell.exe' AND toLower(p.command_line) CONTAINS 'invoke-command')
+           OR toLower(p.command_line) CONTAINS 'psexec'
+           OR toLower(p.command_line) CONTAINS '\\\\192.'
+           OR toLower(p.command_line) CONTAINS '/node:'
         RETURN 
             p.pid as pid,
             p.process_name as name,

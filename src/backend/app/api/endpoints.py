@@ -1014,14 +1014,49 @@ async def get_single_chain_graph(chain_id: str, time_range_hours: int = Query(24
             # 构建节点
             for i, node in enumerate(chain_nodes):
                 node_id = f"proc_{node.get('pid')}_{node.get('name')}"
+                
+                # 构建详细信息，处理 None 值
+                proc_path = node.get('path') or None
+                proc_cmd = node.get('command') or None
+                first_seen = node.get('first_seen') or '未知'
+                
+                # 判断是否是推断的父进程（没有详细信息）
+                is_inferred_parent = (proc_path is None and proc_cmd is None)
+                
+                # 格式化显示时间
+                if first_seen and first_seen != '未知':
+                    try:
+                        # 尝试格式化时间戳
+                        if 'T' in str(first_seen):
+                            first_seen = str(first_seen).split('T')[1][:8] if 'T' in str(first_seen) else first_seen
+                    except:
+                        pass
+                
+                # 根据是否有详细信息生成不同的描述
+                if is_inferred_parent:
+                    details = f"⚠️ 推断的父进程\n（日志中未捕获该进程的详细信息）\n首次关联: {first_seen}"
+                    category = "Process_Inferred"
+                else:
+                    details = f"进程路径: {proc_path}\n命令行: {proc_cmd}\n首次发现: {first_seen}"
+                    category = "Process"
+                
                 nodes.append({
                     "id": node_id,
                     "name": f"{node.get('name')} (PID:{node.get('pid')})",
                     "label": f"{node.get('name')} (PID:{node.get('pid')})",
-                    "category": "Process",
-                    "details": f"Path: {node.get('path', 'N/A')}\nCmd: {node.get('command', 'N/A')}\nFirst Seen: {node.get('first_seen', 'N/A')}",
+                    "category": category,
+                    "details": details,
                     "level": i + 1,
-                    "symbolSize": 35
+                    "symbolSize": 35 if not is_inferred_parent else 30,
+                    # 添加原始数据供前端使用
+                    "raw": {
+                        "pid": node.get('pid'),
+                        "name": node.get('name'),
+                        "path": proc_path,
+                        "command": proc_cmd,
+                        "first_seen": node.get('first_seen'),
+                        "is_inferred": is_inferred_parent
+                    }
                 })
                 
                 # 添加边
@@ -1208,20 +1243,21 @@ async def get_attack_highlights(time_range_hours: int = 24):
 # ==========================================
 
 # 默认资产数据（用于初始化数据库）
+# 实际实验环境的节点配置
 DEFAULT_ASSETS = [
     {
         "key": "1",
-        "name": "FusionTrace-Server",
-        "ip": "192.168.1.2",
+        "name": "Node1",
+        "ip": "172.31.65.2",
         "role": "Server",
         "wazuh": True,
-        "zeek": True,
+        "zeek": False,
         "status": "online"
     },
     {
         "key": "2",
-        "name": "Zeek-Sensor-01",
-        "ip": "192.168.1.3",
+        "name": "Node2 (网关+Zeek)",
+        "ip": "172.31.65.1",
         "role": "Sensor",
         "wazuh": True,
         "zeek": True,
@@ -1229,8 +1265,8 @@ DEFAULT_ASSETS = [
     },
     {
         "key": "3",
-        "name": "Victim-Host",
-        "ip": "192.168.1.10",
+        "name": "Node3 (VictimA)",
+        "ip": "172.31.65.4",
         "role": "Victim",
         "wazuh": True,
         "zeek": False,
@@ -1238,12 +1274,21 @@ DEFAULT_ASSETS = [
     },
     {
         "key": "4",
-        "name": "Attacker-VM",
-        "ip": "192.168.1.20",
+        "name": "Node4 (VictimB)",
+        "ip": "172.31.65.5",
+        "role": "Victim",
+        "wazuh": True,
+        "zeek": False,
+        "status": "online"
+    },
+    {
+        "key": "5",
+        "name": "Node5 (Attacker)",
+        "ip": "172.31.65.3",
         "role": "Attacker",
         "wazuh": False,
         "zeek": False,
-        "status": "suspicious"
+        "status": "online"
     }
 ]
 
@@ -1542,6 +1587,56 @@ async def delete_asset(asset_key: str):
         raise HTTPException(status_code=500, detail=f"删除资产失败: {str(e)}")
 
 
+@router.post("/assets/reset")
+async def reset_assets():
+    """
+    重置资产列表到默认配置
+    
+    删除所有现有资产节点，重新创建默认的实验环境节点
+    用于清除自动发现的资产，恢复到初始状态
+    """
+    try:
+        session = db.get_session()
+        try:
+            # 1. 删除所有现有 Asset 节点
+            delete_query = "MATCH (a:Asset) DELETE a RETURN count(*) as deleted"
+            result = session.run(delete_query)
+            record = result.single()
+            deleted_count = record["deleted"] if record else 0
+            logger.info(f"已删除 {deleted_count} 个现有资产节点")
+            
+            # 2. 创建默认资产节点
+            for asset in DEFAULT_ASSETS:
+                create_query = """
+                CREATE (a:Asset {
+                    key: $key,
+                    name: $name,
+                    ip: $ip,
+                    role: $role,
+                    wazuh: $wazuh,
+                    zeek: $zeek,
+                    status: $status,
+                    last_seen: datetime(),
+                    created_at: datetime()
+                })
+                """
+                session.run(create_query, **asset)
+            
+            logger.info(f"成功重置资产列表，创建 {len(DEFAULT_ASSETS)} 个默认节点")
+            return {
+                "success": True, 
+                "message": f"资产列表已重置，删除 {deleted_count} 个旧节点，创建 {len(DEFAULT_ASSETS)} 个默认节点",
+                "deleted": deleted_count,
+                "created": len(DEFAULT_ASSETS)
+            }
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"重置资产列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"重置资产列表失败: {str(e)}")
+
+
 # ==========================================
 # 7. 攻击归因 (Attribution & Threat Intel)
 # ==========================================
@@ -1605,7 +1700,86 @@ async def get_attribution_result(time_range_hours: int = 24):
 
 
 # ==========================================
-# 8. 分析报告 (Analysis Report)
+# 8. 调试端点 (Debug)
+# ==========================================
+
+@router.get("/debug/database-status")
+async def get_database_status():
+    """
+    调试端点：获取数据库状态，用于诊断数据处理问题
+    
+    返回:
+    - 各类型节点数量
+    - 各类型关系数量
+    - 最近的进程节点示例
+    """
+    try:
+        session = db.get_session()
+        try:
+            stats = {}
+            
+            # 1. 统计各类型节点数量
+            node_count_query = """
+            MATCH (n)
+            RETURN labels(n)[0] as label, count(n) as count
+            ORDER BY count DESC
+            """
+            node_result = session.run(node_count_query)
+            stats["nodes"] = {record["label"]: record["count"] for record in node_result}
+            
+            # 2. 统计各类型关系数量
+            rel_count_query = """
+            MATCH ()-[r]->()
+            RETURN type(r) as type, count(r) as count
+            ORDER BY count DESC
+            """
+            rel_result = session.run(rel_count_query)
+            stats["relationships"] = {record["type"]: record["count"] for record in rel_result}
+            
+            # 3. 获取最近5个进程节点示例
+            process_sample_query = """
+            MATCH (p:Process)
+            RETURN p.pid as pid, p.process_name as name, p.command_line as command, 
+                   p.host_id as host_id, p.first_seen as first_seen
+            ORDER BY p.first_seen DESC
+            LIMIT 5
+            """
+            process_result = session.run(process_sample_query)
+            stats["recent_processes"] = [dict(record) for record in process_result]
+            
+            # 4. 检查 SPAWNED 关系是否存在
+            spawned_query = """
+            MATCH (parent:Process)-[r:SPAWNED]->(child:Process)
+            RETURN parent.process_name as parent, child.process_name as child,
+                   parent.pid as parent_pid, child.pid as child_pid
+            ORDER BY r.timestamp DESC
+            LIMIT 5
+            """
+            spawned_result = session.run(spawned_query)
+            stats["spawned_relationships"] = [dict(record) for record in spawned_result]
+            
+            # 5. 检查攻击链候选（有 SPAWNED 关系的进程）
+            chain_candidate_query = """
+            MATCH path=(root:Process)-[:SPAWNED*1..3]->(leaf:Process)
+            RETURN root.process_name as root_name, 
+                   length(path) as chain_length,
+                   [n in nodes(path) | n.process_name] as chain_processes
+            LIMIT 10
+            """
+            chain_result = session.run(chain_candidate_query)
+            stats["potential_chains"] = [dict(record) for record in chain_result]
+            
+            return stats
+            
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"获取数据库状态失败: {str(e)}", exc_info=True)
+        return {"error": str(e)}
+
+
+# ==========================================
+# 9. 分析报告 (Analysis Report)
 # ==========================================
 
 @router.get("/analysis/report")

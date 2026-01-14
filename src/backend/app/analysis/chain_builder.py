@@ -55,10 +55,33 @@ class ChainBuilder:
         查找所有进程链（可变长度的父子关系，最深5层）。
         利用边属性中的timestamp进行事件排序和去重。
         """
+        # 可疑进程列表 - 包含 Windows 和 Linux 常见攻击工具
+        # Windows 进程
+        WINDOWS_SUSPICIOUS = [
+            'cmd.exe', 'powershell.exe', 'w3wp.exe', 'nc.exe', 'mimikatz.exe', 
+            'psexec.exe', 'regsvr32.exe', 'rundll32.exe', 'wscript.exe', 
+            'cscript.exe', 'mshta.exe', 'certutil.exe', 'bitsadmin.exe',
+            'wmic.exe', 'schtasks.exe', 'reg.exe', 'net.exe', 'net1.exe',
+            'whoami.exe', 'systeminfo.exe', 'ipconfig.exe', 'tasklist.exe',
+            'procdump.exe', 'PSEXESVC.exe', '7z.exe', 'wevtutil.exe',
+            'token_steal.exe'
+        ]
+        # Linux 进程
+        LINUX_SUSPICIOUS = [
+            'sh', 'bash', 'dash', 'zsh', 'python', 'python3', 'perl', 'ruby',
+            'nc', 'ncat', 'netcat', 'wget', 'curl', 'chmod', 'chown',
+            'crontab', 'at', 'sudo', 'su', 'id', 'uname', 'whoami',
+            'cat', 'rm', 'cp', 'mv', 'tar', 'gzip', 'base64', 'xxd',
+            'ssh', 'scp', 'sftp', 'sftp-server', 'rsync', 'nmap'
+        ]
+        
+        all_suspicious = WINDOWS_SUSPICIOUS + LINUX_SUSPICIOUS
+        
         query = """
         MATCH path=(root:Process)-[edges:SPAWNED*1..5]->(leaf:Process)
-        WHERE root.process_name IN ['cmd.exe', 'powershell.exe', 'w3wp.exe', 'nc.exe', 'mimikatz.exe', 'psexec.exe', 'regsvr32.exe']
-           OR leaf.process_name IN ['cmd.exe', 'powershell.exe', 'nc.exe', 'mimikatz.exe', 'psexec.exe', 'regsvr32.exe']
+        WHERE root.process_name IN $suspicious_procs
+           OR leaf.process_name IN $suspicious_procs
+           OR root.command_line IS NOT NULL
         RETURN 
             root.host_id as host_id,
             nodes(path) as path_nodes,
@@ -68,24 +91,52 @@ class ChainBuilder:
         """
         
         try:
-            results = self.graph_sync.execute_query(query, {})
+            results = self.graph_sync.execute_query(query, {"suspicious_procs": all_suspicious})
             chains = []
+            
+            # 如果没有找到进程链（没有 SPAWNED 关系），尝试查找单独的可疑进程
+            if not results:
+                logger.info("未找到进程链（无 SPAWNED 关系），尝试查找单独的可疑进程...")
+                single_proc_query = """
+                MATCH (p:Process)
+                WHERE p.process_name IN $suspicious_procs
+                   OR p.command_line IS NOT NULL
+                RETURN 
+                    p.host_id as host_id,
+                    [p] as path_nodes,
+                    [] as path_edges
+                ORDER BY p.first_seen DESC
+                LIMIT 50
+                """
+                results = self.graph_sync.execute_query(single_proc_query, {"suspicious_procs": all_suspicious})
             
             for record in results:
                 host_id = record.get("host_id")
                 path_nodes = record.get("path_nodes", [])
                 path_edges = record.get("path_edges", [])
                 
-                # 如果获取不到完整路径节点，则跳过
-                if not path_nodes or len(path_nodes) < 2:
+                # 如果获取不到路径节点，则跳过
+                # 允许单节点进程（没有 SPAWNED 关系的独立进程也应显示）
+                if not path_nodes:
                     continue
                 
                 # 构建多节点链：[{node1}, {node2}, ..., {nodeN}]
                 chain_nodes = []
                 for node in path_nodes:
+                    # 处理进程名为空的情况（父进程可能只有 PID）
+                    proc_name = node.get("process_name")
+                    if not proc_name:
+                        # 尝试从 process_path 提取文件名
+                        proc_path = node.get("process_path")
+                        if proc_path:
+                            proc_name = proc_path.split("/")[-1].split("\\")[-1]
+                        else:
+                            # 使用 PID 作为显示名称
+                            proc_name = f"PID:{node.get('pid')}"
+                    
                     chain_nodes.append({
                         "pid": node.get("pid"),
-                        "name": node.get("process_name"),
+                        "name": proc_name,
                         "command": node.get("command_line"),
                         "first_seen": node.get("first_seen"),  # 使用first_seen而非start_time
                         "path": node.get("process_path"),

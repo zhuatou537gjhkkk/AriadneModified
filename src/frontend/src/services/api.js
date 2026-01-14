@@ -167,10 +167,13 @@ export const getAssetsList = async () => {
     try {
         return await request.get('/assets');
     } catch (e) {
+        // 实际实验环境的节点配置（API 回退数据）
         return [
-            { key: '1', name: 'Node-01 (Analysis)', ip: '192.168.1.2', role: 'Server', wazuh: true, zeek: true },
-            { key: '2', name: 'Node-02 (Zeek)', ip: '192.168.1.3', role: 'Sensor', wazuh: true, zeek: true },
-            { key: '3', name: 'Node-03 (Agent)', ip: '192.168.1.5', role: 'Victim', wazuh: false, zeek: false },
+            { key: '1', name: 'Node1', ip: '172.31.65.2', role: 'Server', wazuh: true, zeek: false, status: 'online' },
+            { key: '2', name: 'Node2 (网关+Zeek)', ip: '172.31.65.1', role: 'Sensor', wazuh: true, zeek: true, status: 'online' },
+            { key: '3', name: 'Node3 (VictimA)', ip: '172.31.65.4', role: 'Victim', wazuh: true, zeek: false, status: 'online' },
+            { key: '4', name: 'Node4 (VictimB)', ip: '172.31.65.5', role: 'Victim', wazuh: true, zeek: false, status: 'online' },
+            { key: '5', name: 'Node5 (Attacker)', ip: '172.31.65.3', role: 'Attacker', wazuh: false, zeek: false, status: 'online' },
         ];
     }
 };

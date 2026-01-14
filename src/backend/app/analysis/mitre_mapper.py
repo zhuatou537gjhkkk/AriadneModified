@@ -94,6 +94,9 @@ class MITREMapper:
         "cmd.exe": "T1059.003",
         "powershell": "T1059.001",
         "bash": "T1059.004",
+        "sh": "T1059.004",    # Unix sh shell
+        "dash": "T1059.004",  # Debian Almquist Shell
+        "zsh": "T1059.004",   # Z shell
         "python": "T1059.006",
         
         # T1218: System Binary Proxy Execution (防御规避)
@@ -180,8 +183,10 @@ class MITREMapper:
         
         # T1083: File and Directory Discovery (发现)
         "dir ": "T1083",
+        "dir.exe": "T1083",
         "ls ": "T1083",
         "find ": "T1083",
+        "find": "T1083",  # Linux find 命令（进程名）
         
         # T1057: Process Discovery (发现)
         "tasklist": "T1057",
@@ -197,6 +202,9 @@ class MITREMapper:
         # T1005: Data from Local System (收集)
         "type ": "T1005",
         "cat ": "T1005",
+        "cat": "T1005",  # Linux cat 命令（进程名）
+        "head": "T1005",  # Linux head 命令
+        "tail": "T1005",  # Linux tail 命令
         "copy ": "T1005",
         
         # T1113: Screen Capture (收集)
@@ -219,6 +227,8 @@ class MITREMapper:
         # T1070: Indicator Removal (防御规避)
         "del ": "T1070.004",
         "rm ": "T1070.004",
+        "rm": "T1070.004",  # Linux rm 命令（进程名）
+        "shred": "T1070.004",  # Linux shred 命令
         "wevtutil": "T1070.001",
         
         # T1486: Data Encrypted for Impact (影响)
@@ -501,54 +511,118 @@ class MITREMapper:
             "APT28": {
                 "name": "APT28 (Fancy Bear)",
                 "country": "Russia",
-                "signature_techniques": ["T1059.001", "T1021.001", "T1071.001"],
+                "signature_techniques": ["T1059.001", "T1021.001", "T1071.001", "T1082", "T1083"],
                 "signature_tools": ["mimikatz", "powershell"]
             },
             "APT29": {
                 "name": "APT29 (Cozy Bear)",
                 "country": "Russia",
-                "signature_techniques": ["T1059.001", "T1218.011", "T1071.001"],
+                "signature_techniques": ["T1059.001", "T1218.011", "T1071.001", "T1005"],
                 "signature_tools": ["powershell", "rundll32"]
             },
             "APT41": {
                 "name": "APT41",
                 "country": "China",
-                "signature_techniques": ["T1505.003", "T1059.003", "T1071.001"],
-                "signature_tools": ["webshell", "cmd"]
+                "signature_techniques": ["T1505.003", "T1059.003", "T1071.001", "T1021.004"],
+                "signature_tools": ["webshell", "cmd", "ssh"]
             },
             "Lazarus": {
                 "name": "Lazarus Group",
                 "country": "North Korea",
                 "signature_techniques": ["T1059.001", "T1003.001", "T1048.003"],
                 "signature_tools": ["mimikatz", "dns_tunnel"]
+            },
+            # 添加 Linux 攻击相关的 APT 组织
+            "Turla": {
+                "name": "Turla (Snake)",
+                "country": "Russia",
+                "signature_techniques": ["T1059.004", "T1021.004", "T1083", "T1082", "T1005"],
+                "signature_tools": ["bash", "ssh", "find", "cat"]
+            },
+            "TeamTNT": {
+                "name": "TeamTNT",
+                "country": "Unknown",
+                "signature_techniques": ["T1059.004", "T1046", "T1082", "T1070.004", "T1005"],
+                "signature_tools": ["bash", "nmap", "rm", "cat"]
+            },
+            "Rocke": {
+                "name": "Rocke Group",
+                "country": "China",
+                "signature_techniques": ["T1059.004", "T1053.003", "T1082", "T1083"],
+                "signature_tools": ["bash", "cron", "curl", "wget"]
             }
         }
 
         detected_techniques = set(ttps.get("techniques", []))
         matches = []
+        
+        # 定义通用技术（几乎所有攻击都会用到，权重降低）
+        common_techniques_pool = {
+            "T1059.004",  # Unix Shell - 太通用
+            "T1059.001",  # PowerShell - Windows 常见
+            "T1082",      # System Information Discovery - 侦察基础
+            "T1083",      # File and Directory Discovery - 侦察基础
+            "T1005",      # Data from Local System - 通用收集
+        }
+        
+        # 定义独特技术（匹配到这些才更有说服力）
+        unique_techniques_pool = {
+            "T1003.001",  # LSASS Memory - 特定凭据窃取
+            "T1218.011",  # Rundll32 - 特定规避技术
+            "T1505.003",  # Web Shell - 特定持久化
+            "T1048.003",  # DNS Tunnel Exfil - 特定外泄
+            "T1053.003",  # Cron - 特定持久化
+        }
 
         for apt_id, profile in apt_profiles.items():
             signature_techniques = set(profile["signature_techniques"])
             
             # 计算匹配度
-            common_techniques = detected_techniques & signature_techniques
-            if common_techniques:
-                match_score = len(common_techniques) / len(signature_techniques)
+            matched_techniques = detected_techniques & signature_techniques
+            if matched_techniques:
+                # 基础匹配分数
+                base_score = len(matched_techniques) / len(signature_techniques)
+                
+                # 计算通用技术占比（通用技术越多，惩罚越大）
+                common_matched = matched_techniques & common_techniques_pool
+                common_ratio = len(common_matched) / len(matched_techniques) if matched_techniques else 0
+                
+                # 计算独特技术加成
+                unique_matched = matched_techniques & unique_techniques_pool
+                unique_bonus = len(unique_matched) * 0.05  # 每个独特技术加 5%
+                
+                # 应用惩罚和加成
+                # 如果全是通用技术，最多只能得到 70% 分数
+                # 公式：基础分 * (1 - 通用占比 * 0.3) + 独特加成
+                adjusted_score = base_score * (1 - common_ratio * 0.3) + unique_bonus
+                
+                # 设置上限为 85%（因为没有 100% 确定的归因）
+                final_score = min(adjusted_score, 0.85)
+                
+                # 确定置信度等级
+                if final_score > 0.7:
+                    confidence = "High"
+                elif final_score > 0.5:
+                    confidence = "Medium"
+                elif final_score > 0.3:
+                    confidence = "Low"
+                else:
+                    confidence = "Very Low"
                 
                 matches.append({
                     "apt_id": apt_id,
                     "apt_name": profile["name"],
                     "country": profile["country"],
-                    "match_score": match_score,
-                    "matched_techniques": list(common_techniques),
-                    "confidence": "High" if match_score > 0.6 else "Medium" if match_score > 0.3 else "Low"
+                    "match_score": final_score,
+                    "matched_techniques": list(matched_techniques),
+                    "confidence": confidence
                 })
 
         # 按匹配度排序
         matches.sort(key=lambda x: x["match_score"], reverse=True)
         
         if matches:
-            logger.info(f"匹配到 {len(matches)} 个可能的 APT 组织")
+            logger.info(f"匹配到 {len(matches)} 个可能的 APT 组织，最高匹配: {matches[0]['apt_name']} ({matches[0]['match_score']:.1%})")
         
         return matches
 

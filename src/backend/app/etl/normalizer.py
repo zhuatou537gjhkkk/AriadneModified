@@ -368,8 +368,10 @@ class LogNormalizer:
             return None
         
         # 2. 基础规则过滤（可配置阈值）
+        # 注意：真实 Wazuh 数据中，Linux Auditd 日志的级别通常是 3
+        # 降低阈值以支持真实数据处理
         rule_level = data.get("rule", {}).get("level", 0)
-        if rule_level < 3:  # 过滤低级别告警（Level 1-2 通常是信息性日志）
+        if rule_level < 1:  # 只过滤 level 0（信息性日志）
             logger.debug(f"过滤低级别告警: Level {rule_level}")
             return None
 
@@ -509,7 +511,23 @@ class LogNormalizer:
         normalized["user_name"] = audit_data.get("auid_user") or audit_data.get("uid_user")
 
         # 命令行参数（用于检测命令注入、反弹Shell等）
-        cmdline_raw = audit_data.get("execve_args") or audit_data.get("a0")
+        # 支持两种格式：
+        # 1. 模拟数据格式: execve_args: ["bash", "-c", "..."]
+        # 2. 真实Wazuh格式: execve: {"a0": "/bin/sh", "a1": "-c", "a2": "..."}
+        cmdline_raw = audit_data.get("execve_args")
+        
+        if cmdline_raw is None:
+            # 尝试从嵌套的 execve 对象中提取参数（真实 Wazuh 数据格式）
+            execve_obj = audit_data.get("execve", {})
+            if execve_obj:
+                # 提取 a0, a1, a2... 参数并按顺序组合
+                args = []
+                i = 0
+                while f"a{i}" in execve_obj:
+                    args.append(str(execve_obj[f"a{i}"]))
+                    i += 1
+                cmdline_raw = args if args else audit_data.get("a0")
+        
         if isinstance(cmdline_raw, list):
             normalized["command_line"] = " ".join(str(x) for x in cmdline_raw)
         else:

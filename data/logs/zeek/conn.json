@@ -1,2 +1,0 @@
-{"ts": 1768397743.527804, "uid": "Cio7Et5OtXAd61RUko", "id.orig_h": "192.168.1.102", "id.orig_p": 60719, "id.resp_h": "45.67.89.100", "id.resp_p": 443, "proto": "tcp", "conn_state": "SF", "duration": 2411.5276068081916, "orig_bytes": 20520, "resp_bytes": 43096}
-{"ts": 1768397758.540961, "uid": "CvhPTQZmAzMGpPOOyI", "id.orig_h": "192.168.1.105", "id.orig_p": 51471, "id.resp_h": "45.67.89.100", "id.resp_p": 443, "proto": "tcp", "conn_state": "SF", "duration": 417.24345604845655, "orig_bytes": 19606306, "resp_bytes": 3211}
