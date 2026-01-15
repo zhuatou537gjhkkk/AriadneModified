@@ -24,7 +24,9 @@ async def run_etl_pipeline():
     """
     持续运行ETL Pipeline，监听日志并处理
     """
-    etl_pipeline = ETLPipeline()
+    # test_mode=True: 从文件开头读取历史数据（测试/导入用）
+    # test_mode=False: 只监听新增数据（生产环境用）
+    etl_pipeline = ETLPipeline(test_mode=True)
     logger.info("[ETL] Starting continuous ETL pipeline monitoring...")
     
     try:
