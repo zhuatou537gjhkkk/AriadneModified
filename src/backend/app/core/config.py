@@ -30,9 +30,9 @@ class Settings(BaseSettings):
     # BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent.parent
     
     # 测试日志路径（data 文件夹）
-    LOG_PATH_WAZUH: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
-    LOG_DIR_ZEEK: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\"
-    ZEEK_FILES_TO_WATCH: list = ["conn.jsonl","ntp.jsonl","dns.jsonl","files.jsonl","http.jsonl","packet_filter.jsonl","ssh.jsonl","ssl.jsonl","tunnel.jsonl","weird.jsonl","x509.jsonl"]
+    # LOG_PATH_WAZUH: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
+    # LOG_DIR_ZEEK: str = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\"
+    # ZEEK_FILES_TO_WATCH: list = ["conn.jsonl","ntp.jsonl","dns.jsonl","files.jsonl","http.jsonl","packet_filter.jsonl","ssh.jsonl","ssl.jsonl","tunnel.jsonl","weird.jsonl","x509.jsonl"]
 
     class Config:
         # 指定环境变量文件路径

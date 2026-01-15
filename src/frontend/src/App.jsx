@@ -5,7 +5,7 @@ import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, ConfigProvider, th
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
   SafetyCertificateOutlined, WarningOutlined, BugOutlined, CodeOutlined,
-  WifiOutlined, DoubleLeftOutlined, DoubleRightOutlined
+  WifiOutlined, ThunderboltFilled, PlayCircleOutlined, DoubleLeftOutlined, DoubleRightOutlined
 } from '@ant-design/icons';
 
 
@@ -85,8 +85,10 @@ const App = () => {
 
   // === 2. 交互状态 ===
   const [selectedNode, setSelectedNode] = useState(null);
+  const [highlightPath, setHighlightPath] = useState([]);
   const [analysisVisible, setAnalysisVisible] = useState(false);
   const [currentAlert, setCurrentAlert] = useState(null);
+  const [timeStep, setTimeStep] = useState(4);
 
   // 3. 新增：useEffect 更新时间
   useEffect(() => {
@@ -240,10 +242,25 @@ const App = () => {
 
   }, []);
 
+  // === 4. 时序回放逻辑 ===
+  const filteredGraphData = useMemo(() => {
+    if (!graphData || !graphData.nodes) return { nodes: [], links: [] };
+    const nodesToShowCount = [1, 2, 3, 4, 5][timeStep] || 5;
+    // 注意：这里假设 graphData.nodes 的顺序就是时序顺序
+    const visibleNodes = graphData.nodes.slice(0, nodesToShowCount);
+    const visibleLinks = graphData.links.filter(link =>
+      visibleNodes.find(n => n.id === link.source) && visibleNodes.find(n => n.id === link.target)
+    );
+    return { nodes: visibleNodes, links: visibleLinks };
+  }, [timeStep, graphData]);
+
+  const ATTACK_PATH = ['192.168.1.5', 'cmd.exe', 'powershell.exe', '114.114.114.114'];
+
   // === 事件处理 ===
   const handleMenuClick = (e) => {
     setCurrentView(e.key);
     setSelectedNode(null);
+    setHighlightPath([]);
   };
 
   // 【新增】处理攻击链点击事件
@@ -352,15 +369,25 @@ const App = () => {
 
       case 'investigation':
         return (
-          <Row gutter={[16, 16]} style={{ display: 'flex', alignItems: 'stretch' }}>
-            <Col span={18} style={{ display: 'flex' }}>
+          <Row gutter={[16, 16]}>
+            <Col span={18}>
               <Card
-                title="交互式攻击图谱 (INTERACTIVE GRAPH)"
-                bordered={false} className="cyber-card" bodyStyle={{ padding: 0 }} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>交互式攻击图谱 (INTERACTIVE GRAPH)</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTimeStep(0); let i = 0; const t = setInterval(() => { i++; if (i <= 4) setTimeStep(i); else clearInterval(t); }, 1000); }}>回放</Button>
+                      <Button type="primary" danger={highlightPath.length > 0} icon={<ThunderboltFilled />} onClick={() => setHighlightPath(highlightPath.length > 0 ? [] : ATTACK_PATH)}>
+                        {highlightPath.length > 0 ? "清除路径" : "一键溯源"}
+                      </Button>
+                    </div>
+                  </div>
+                }
+                bordered={false} className="cyber-card" bodyStyle={{ padding: 0 }} style={{ marginBottom: '16px' }}
               >
-                <div style={{ height: 600, width: '100%', position: 'relative', flex: 1 }}>
+                <div style={{ height: 600, width: '100%', position: 'relative' }}>
                   {graphData.nodes && graphData.nodes.length > 0 ? (
-                    <AttackGraph onNodeClick={setSelectedNode} graphData={graphData} />
+                    <AttackGraph onNodeClick={setSelectedNode} highlightNodes={highlightPath} graphData={graphData} />
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8' }}>
                       <Empty description="请从右侧选择攻击链" />
