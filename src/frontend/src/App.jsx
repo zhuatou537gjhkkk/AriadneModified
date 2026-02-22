@@ -1,5 +1,5 @@
 /* src/App.jsx - 完整重构版 */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import wsService from './services/websocket'; // 引入刚才创建的服务
 import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, ConfigProvider, theme, Switch, Progress, Timeline, Button, List, Avatar, Empty, Drawer, Descriptions, Slider, Spin, message } from 'antd';
 import {
@@ -8,12 +8,17 @@ import {
   WifiOutlined, ThunderboltFilled, PlayCircleOutlined, DoubleLeftOutlined, DoubleRightOutlined
 } from '@ant-design/icons';
 
+// 2. 引入虚拟列表和错误边界组件
+import VirtualList from 'rc-virtual-list';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // 引入组件
 import AttackGraph from './components/AttackGraph';
 import TrafficTrend from './components/TrafficTrend';
-import EntropyChart from './components/EntropyChart';
+// 3. 将 EntropyChart 改为懒加载 (按需加载，首屏不加载该图表代码)
+const EntropyChart = React.lazy(() => import('./components/EntropyChart'));
 import TopologyGraph from './components/TopologyGraph';
+import CyberClock from './components/CyberClock'; // 引入独立的时钟组件
 
 // 引入 API 服务
 import { getDashboardStats, getTrafficTrend, getLatestAlerts, getAttackGraph, getAssetsList, getAttackHighlights, getAttributionResult, getChainsList, getSingleChainGraph } from './services/api';
@@ -57,8 +62,7 @@ const App = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
   const [loading, setLoading] = useState(true); // 全局加载状态
-  // 1. 新增：实时时钟 State
-  const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
+  // 移除原有的 currentTime 状态和 useEffect 定时器，避免全局重渲染
 
   // 2. 新增：页面标题映射 (根据 currentView 显示不同的大标题)
   const viewTitles = {
@@ -90,21 +94,7 @@ const App = () => {
   const [currentAlert, setCurrentAlert] = useState(null);
   const [timeStep, setTimeStep] = useState(4);
 
-  // 3. 新增：useEffect 更新时间
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // 格式化时间：2026-01-14 18:30:45
-      const now = new Date();
-      const timeString = now.getFullYear() + '-' +
-        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-        String(now.getDate()).padStart(2, '0') + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' +
-        String(now.getMinutes()).padStart(2, '0') + ':' +
-        String(now.getSeconds()).padStart(2, '0');
-      setCurrentTime(timeString);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // 移除原有的 useEffect 定时器逻辑
 
   // === 3. 数据加载逻辑 (Lifecycle) ===
   useEffect(() => {
@@ -345,22 +335,29 @@ const App = () => {
 
               <Col span={8}>
                 <Card title="实时告警 (LATEST ALERTS)" bordered={false} className="cyber-card" style={{ height: '100%', minHeight: '816px' }}>
-                  <List
-                    size="small"
-                    dataSource={alertList} // 使用 API 数据
-                    renderItem={item => (
-                      <List.Item
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: item.clickable ? 'pointer' : 'default' }}
-                        onClick={() => item.clickable && handleAlertClick(item)}
-                      >
-                        <List.Item.Meta
-                          avatar={<WarningOutlined style={{ fontSize: '18px', color: item.level === 'High' ? '#f43f5e' : '#fbbf24', marginTop: '5px' }} />}
-                          title={<div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1' }}>{item.title}</span>{item.clickable && <Tag color="blue" style={{ transform: 'scale(0.8)', margin: 0 }}>点击分析</Tag>}</div>}
-                          description={<span style={{ color: '#64748b', fontSize: '12px' }}>{item.source} | {item.time}</span>}
-                        />
-                      </List.Item>
-                    )}
-                  />
+                  {/* 4. 虚拟列表改造：只渲染可视区域内的 DOM 节点，防止海量日志卡死浏览器 */}
+                  <List size="small">
+                    <VirtualList
+                      data={alertList}
+                      height={700}       // 虚拟列表容器高度
+                      itemHeight={65}    // 预估每个列表项的高度
+                      itemKey={(item, index) => item.id || index} // 唯一键值
+                    >
+                      {(item, index) => (
+                        <List.Item
+                          key={item.id || index}
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: item.clickable ? 'pointer' : 'default' }}
+                          onClick={() => item.clickable && handleAlertClick(item)}
+                        >
+                          <List.Item.Meta
+                            avatar={<WarningOutlined style={{ fontSize: '18px', color: item.level === 'High' ? '#f43f5e' : '#fbbf24', marginTop: '5px' }} />}
+                            title={<div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1' }}>{item.title}</span>{item.clickable && <Tag color="blue" style={{ transform: 'scale(0.8)', margin: 0 }}>点击分析</Tag>}</div>}
+                            description={<span style={{ color: '#64748b', fontSize: '12px' }}>{item.source} | {item.time}</span>}
+                          />
+                        </List.Item>
+                      )}
+                    </VirtualList>
+                  </List>
                 </Card>
               </Col>
             </Row>
@@ -730,71 +727,13 @@ const App = () => {
               {/* 2. 分隔竖线 */}
               <div style={{ width: '1px', height: '16px', background: '#334155' }}></div>
 
-              {/* 3. 实时时间 (模仿图1的灰色小字) */}
-              {/* --- 修改开始：增强版电子赛博时钟 --- */}
+              {/* 3. 实时时间 (使用独立的 CyberClock 组件阻断重渲染) */}
               <div style={{
                 fontFamily: '"Share Tech Mono", monospace',
-                // 容器样式保持不变
                 background: 'rgba(15, 23, 42, 0.8)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                padding: '0 12px',      // 上下 padding 设为 0，靠 flex 居中
-                borderRadius: '2px',
-
-                display: 'flex',
-                alignItems: 'center',
-                height: '32px',
-                gap: '12px',            // 左侧标签和右侧时间拉开一点距离
-                userSelect: 'none',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
               }}>
-
-                {/* 左侧：元数据列 (T-SYNC + ACTIVE) */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'flex-start',
-                  borderRight: '1px solid rgba(255,255,255,0.1)', // 中间加一条细线分隔
-                  paddingRight: '12px',
-                  height: '20px' // 控制高度，让线条短一点
-                }}>
-                  {/* 第一行：功能标签 */}
-                  <span style={{
-                    color: '#64748b',
-                    fontSize: '9px',
-                    fontWeight: 'bold',
-                    lineHeight: '1',
-                    letterSpacing: '1px',
-                    marginBottom: '3px'
-                  }}>T-SYNC</span>
-
-                  {/* 第二行：状态标签 (带绿色呼吸灯) */}
-                  <span style={{
-                    color: '#4ade80',  // 亮绿色
-                    fontSize: '9px',
-                    lineHeight: '1',
-                    letterSpacing: '1px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    textShadow: '0 0 5px rgba(74, 222, 128, 0.4)' // 文字绿色微光
-                  }}>
-                    <span className="status-dot-green"></span> {/* 引用CSS动画 */}
-                    ACTIVE
-                  </span>
-                </div>
-
-                {/* 右侧：时间本体 */}
-                <div style={{
-                  fontSize: '18px',
-                  color: '#38bdf8',
-                  textShadow: '0 0 10px rgba(56, 189, 248, 0.6)',
-                  letterSpacing: '2px',
-                  lineHeight: '32px' // 垂直居中
-                }}>
-                  {currentTime}
-                </div>
+                <CyberClock />
               </div>
-              {/* --- 修改结束 --- */}
 
               {/* 4. (可选) 威胁等级 Badge - 仅在 Dashboard 显示 */}
               {currentView === 'dashboard' && (
@@ -872,10 +811,23 @@ const App = () => {
             {/* --- 修改结束 --- */}
           </Header>
           <Content style={{ margin: '20px', overflowY: 'auto', height: 'calc(100vh - 100px)' }}>
-            {renderContent()}
+            {/* 5. 使用 ErrorBoundary 包裹核心大屏内容，防止局部崩溃导致全局白屏 */}
+            <ErrorBoundary>
+              {renderContent()}
+            </ErrorBoundary>
           </Content>
           <Drawer title="威胁深度分析" placement="right" width={600} onClose={() => setAnalysisVisible(false)} open={analysisVisible} styles={{ body: { background: '#0b1121' } }}>
-            {currentAlert && (<><h3 style={{ color: '#f43f5e' }}>{currentAlert.title}</h3><div style={{ height: '220px', margin: '20px 0' }}><EntropyChart /></div></>)}
+            {currentAlert && (
+              <>
+                <h3 style={{ color: '#f43f5e' }}>{currentAlert.title}</h3>
+                <div style={{ height: '220px', margin: '20px 0' }}>
+                  {/* 6. Suspense 配合 React.lazy，在加载图表代码时显示科技感 Spin */}
+                  <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin size="large" tip="加载深度分析引擎..." /></div>}>
+                    <EntropyChart />
+                  </Suspense>
+                </div>
+              </>
+            )}
           </Drawer>
         </Layout>
       </Layout>

@@ -1,6 +1,16 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-// 删除 import mockData from '../mock/graph_data.json'; 
+
+// 防御 XSS：HTML 实体转义工具函数
+const escapeHTML = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
 
 // 接收 graphData (来自父组件的动态数据)
 const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
@@ -19,48 +29,50 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
         'External_IP': '#f43f5e'
     };
 
-    // 处理节点样式
-    const processedNodes = safeData.nodes.map(node => {
-        const isHighlighted = highlightNodes.includes(node.id);
-        const baseColor = colorMap[node.category] || '#ccc';
+    // 使用 useMemo 缓存节点处理逻辑，避免每次渲染都重新遍历
+    const processedNodes = useMemo(() => {
+        return safeData.nodes.map(node => {
+            const isHighlighted = highlightNodes.includes(node.id);
+            const baseColor = colorMap[node.category] || '#ccc';
 
-        // --- 新增：无文件/内存攻击的可视化 (文档要求: 场景B) ---
-        const isFileless = node.details && (node.details.includes("内存") || node.details.includes("Injected"));
+            const isFileless = node.details && (node.details.includes("内存") || node.details.includes("Injected"));
 
-        return {
-            ...node,
-            symbolSize: isHighlighted ? 50 : (node.symbolSize || 30),
-            itemStyle: {
-                color: baseColor,
-                // 虚线边框逻辑
-                borderType: isFileless ? 'dashed' : 'solid',
-                borderWidth: isFileless ? 3 : (isHighlighted ? 4 : 0),
-                borderColor: isFileless ? '#f43f5e' : (isHighlighted ? '#fff' : 'transparent'),
-                shadowBlur: (isHighlighted || isFileless) ? 10 : 0,
-                shadowColor: isHighlighted ? '#fff' : (isFileless ? '#f43f5e' : 'transparent')
-            },
-            label: {
-                show: true,
-                fontSize: isHighlighted ? 14 : 11,
-                fontWeight: (isHighlighted || isFileless) ? 'bold' : 'normal',
-                formatter: isFileless ? '{b}\n(Mem Only)' : '{b}'
-            }
-        };
-    });
+            return {
+                ...node,
+                symbolSize: isHighlighted ? 50 : (node.symbolSize || 30),
+                itemStyle: {
+                    color: baseColor,
+                    borderType: isFileless ? 'dashed' : 'solid',
+                    borderWidth: isFileless ? 3 : (isHighlighted ? 4 : 0),
+                    borderColor: isFileless ? '#f43f5e' : (isHighlighted ? '#fff' : 'transparent'),
+                    shadowBlur: (isHighlighted || isFileless) ? 10 : 0,
+                    shadowColor: isHighlighted ? '#fff' : (isFileless ? '#f43f5e' : 'transparent')
+                },
+                label: {
+                    show: true,
+                    fontSize: isHighlighted ? 14 : 11,
+                    fontWeight: (isHighlighted || isFileless) ? 'bold' : 'normal',
+                    formatter: isFileless ? '{b}\n(Mem Only)' : '{b}'
+                }
+            };
+        });
+    }, [safeData.nodes, highlightNodes]);
 
-    // 处理连线高亮
-    const processedLinks = safeData.links.map(link => {
-        const isHighlighted = highlightNodes.includes(link.source) && highlightNodes.includes(link.target);
-        return {
-            ...link,
-            lineStyle: {
-                color: isHighlighted ? '#f43f5e' : '#475569',
-                width: isHighlighted ? 4 : 2,
-                curveness: 0.2,
-                opacity: isHighlighted ? 1 : 0.3
-            }
-        };
-    });
+    // 使用 useMemo 缓存连线处理逻辑
+    const processedLinks = useMemo(() => {
+        return safeData.links.map(link => {
+            const isHighlighted = highlightNodes.includes(link.source) && highlightNodes.includes(link.target);
+            return {
+                ...link,
+                lineStyle: {
+                    color: isHighlighted ? '#f43f5e' : '#475569',
+                    width: isHighlighted ? 4 : 2,
+                    curveness: 0.2,
+                    opacity: isHighlighted ? 1 : 0.3
+                }
+            };
+        });
+    }, [safeData.links, highlightNodes]);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -106,9 +118,10 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
         }
     };
 
-    const option = {
+    // 使用 useMemo 缓存庞大的 ECharts option 对象
+    const option = useMemo(() => ({
         backgroundColor: 'transparent',
-        tooltip: { 
+        tooltip: {
             trigger: 'item',
             backgroundColor: 'rgba(15, 23, 42, 0.95)',
             borderColor: '#334155',
@@ -121,17 +134,18 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
             formatter: (params) => {
                 if (params.dataType === 'node') {
                     const data = params.data;
-                    const name = data.name || '未知';
-                    const category = data.category || '未知';
+                    // 防御 XSS：对不可信的节点数据进行转义
+                    const name = escapeHTML(data.name || '未知');
+                    const category = escapeHTML(data.category || '未知');
                     const details = data.details || '';
-                    
-                    // 将详情文本按换行符分割并格式化
+
+                    // 将详情文本按换行符分割并格式化，同时转义键值对
                     const detailLines = details.split('\n').map(line => {
                         const [key, ...valueParts] = line.split(':');
                         const value = valueParts.join(':').trim() || '未知';
-                        return `<div style="margin: 4px 0;"><span style="color: #94a3b8;">${key}:</span> <span style="color: #f1f5f9;">${value}</span></div>`;
+                        return `<div style="margin: 4px 0;"><span style="color: #94a3b8;">${escapeHTML(key)}:</span> <span style="color: #f1f5f9;">${escapeHTML(value)}</span></div>`;
                     }).join('');
-                    
+
                     return `
                         <div style="min-width: 200px;">
                             <div style="font-size: 15px; font-weight: bold; color: #38bdf8; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 6px;">
@@ -145,16 +159,16 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
                         </div>
                     `;
                 } else if (params.dataType === 'edge') {
-                    // 边的 tooltip
+                    // 边的 tooltip，同样进行转义
                     const data = params.data;
                     return `
                         <div>
                             <span style="color: #94a3b8;">关系:</span> 
-                            <span style="color: #f43f5e;">${data.label || 'SPAWNED'}</span>
+                            <span style="color: #f43f5e;">${escapeHTML(data.label || 'SPAWNED')}</span>
                         </div>
                     `;
                 }
-                return params.name;
+                return escapeHTML(params.name);
             }
         },
         series: [
@@ -198,7 +212,7 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
                 }
             }
         ]
-    };
+    }), [processedNodes, processedLinks]);
 
     return (
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
@@ -206,6 +220,8 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
                 <ReactECharts
                     ref={echartRef}
                     option={option}
+                    notMerge={false}     // 开启增量更新
+                    lazyUpdate={true}    // 开启延迟更新，提升高频渲染性能
                     style={{ height: '100%', width: '100%' }}
                     onEvents={onEvents}
                 />
