@@ -5,7 +5,7 @@ import wsService from './services/websocket';
 import { Layout, Menu, ConfigProvider, theme, message, Spin } from 'antd';
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
-  SafetyCertificateOutlined, WarningOutlined, DoubleLeftOutlined, DoubleRightOutlined
+  SafetyCertificateOutlined, WarningOutlined, DoubleLeftOutlined, DoubleRightOutlined,BugOutlined
 } from '@ant-design/icons';
 
 import ErrorBoundary from './components/ErrorBoundary';
