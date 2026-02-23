@@ -10,6 +10,10 @@ const useDashboardStore = create((set, get) => ({
         time_sync_offset: 0
     },
 
+    // 新增：用于触发子页面重新拉取数据的 Key
+    refreshKey: 0,
+    triggerRefresh: () => set((state) => ({ refreshKey: state.refreshKey + 1 })),
+
     // 异步拉取首屏数据
     fetchStats: async () => {
         try {

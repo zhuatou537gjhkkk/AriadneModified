@@ -82,15 +82,6 @@ export const getLatestAlerts = async () => {
 
 // ================= 2. 溯源画布 (Investigation) =================
 
-// 获取攻击图谱（已废弃，使用新的攻击链 API）
-export const getAttackGraph = async () => {
-    try {
-        return await request.get('/investigation/graph');
-    } catch (e) {
-        return mockGraphData;
-    }
-};
-
 // 【新增】获取攻击链列表
 export const getChainsList = async (timeRange = 24) => {
     try {
