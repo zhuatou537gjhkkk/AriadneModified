@@ -11,13 +11,21 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectTimeout = 3000;
-        // 增加一个标志位，防止严格模式下的竞态条件
         this.isConnecting = false;
+
+        // 1. 心跳保活机制 (Heartbeat)
+        this.pingInterval = null;
+        this.pongTimeout = null;
+        this.HEARTBEAT_INTERVAL = 15000; // 每 15 秒发送一次 ping
+        this.PONG_TIMEOUT = 5000;       // 5 秒未收到 pong 则认为断线
+
+        // 2. 消息缓冲队列与 rAF 节流 (Backpressure)
+        this.messageQueue = [];
+        this.isFlushing = false;
     }
 
     // 1. 初始化连接
     connect() {
-        // 【核心修复】如果当前正在连接(0) 或 已经连接(1)，则不再发起新连接
         if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
             console.log('[WebSocket] Connection already active or connecting...');
             return;
@@ -31,13 +39,21 @@ class WebSocketService {
             console.log('[WebSocket] Connected Successfully');
             this.isConnecting = false;
             this.reconnectAttempts = 0;
-            this.sendMessage({ type: 'ping' });
+            this.startHeartbeat();
         };
 
         this.ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
-                this.listeners.forEach(callback => callback(message));
+
+                // 拦截 pong 响应，不向下分发
+                if (message.type === 'pong') {
+                    this.handlePong();
+                    return;
+                }
+
+                // 将业务消息推入缓冲队列
+                this.enqueueMessage(message);
             } catch (e) {
                 console.error('[WebSocket] Parse error:', e);
             }
@@ -45,7 +61,7 @@ class WebSocketService {
 
         this.ws.onclose = (event) => {
             this.isConnecting = false;
-            // 只有非正常关闭（非1000）才打印断开日志，减少控制台噪音
+            this.stopHeartbeat();
             if (event.code !== 1000) {
                 console.log('[WebSocket] Disconnected (Code: ' + event.code + ')');
                 this.handleReconnect();
@@ -55,18 +71,65 @@ class WebSocketService {
         };
 
         this.ws.onerror = (error) => {
-            // 忽略连接过程中的这类报错，因为可能是热重载导致的
-            if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
-                // console.warn('[WebSocket] Connection error (likely strict mode cleanup)');
-                return;
-            }
+            if (this.ws && this.ws.readyState !== WebSocket.OPEN) return;
             console.error('[WebSocket] Error:', error);
         };
     }
 
+    // === 核心：消息缓冲与节流 ===
+    enqueueMessage(message) {
+        this.messageQueue.push(message);
+        // 如果当前没有在清空队列，则利用 rAF 在下一帧统一清空
+        if (!this.isFlushing) {
+            this.isFlushing = true;
+            requestAnimationFrame(() => this.flushQueue());
+        }
+    }
+
+    flushQueue() {
+        if (this.messageQueue.length === 0) {
+            this.isFlushing = false;
+            return;
+        }
+        // 拷贝当前队列并清空原队列
+        const messages = [...this.messageQueue];
+        this.messageQueue = [];
+        this.isFlushing = false;
+
+        // 将打包好的消息数组分发给所有订阅者
+        this.listeners.forEach(callback => callback(messages));
+    }
+
+    // === 核心：心跳保活 ===
+    startHeartbeat() {
+        this.stopHeartbeat();
+        this.pingInterval = setInterval(() => {
+            this.sendMessage({ type: 'ping' });
+
+            // 设置超时检测
+            this.pongTimeout = setTimeout(() => {
+                console.warn('[WebSocket] Pong timeout, closing connection...');
+                if (this.ws) this.ws.close(); // 主动关闭以触发重连
+            }, this.PONG_TIMEOUT);
+        }, this.HEARTBEAT_INTERVAL);
+    }
+
+    handlePong() {
+        if (this.pongTimeout) {
+            clearTimeout(this.pongTimeout);
+            this.pongTimeout = null;
+        }
+    }
+
+    stopHeartbeat() {
+        if (this.pingInterval) clearInterval(this.pingInterval);
+        if (this.pongTimeout) clearTimeout(this.pongTimeout);
+        this.pingInterval = null;
+        this.pongTimeout = null;
+    }
+
     // 2. 断线重连机制
     handleReconnect() {
-        // 如果是手动关闭的，或者正在连接中，不执行重连
         if (!this.ws || this.ws.readyState === WebSocket.OPEN || this.isConnecting) return;
 
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -94,11 +157,8 @@ class WebSocketService {
     // 5. 关闭连接
     disconnect() {
         if (this.ws) {
-            // 设置重连次数上限，防止 close 触发重连
             this.reconnectAttempts = this.maxReconnectAttempts;
-
-            // 只有当连接已建立时才关闭，避免打断 connecting 状态
-            // 但为了组件卸载安全，还是强制关闭
+            this.stopHeartbeat();
             this.ws.close(1000, "Component Unmounted");
             this.ws = null;
             this.isConnecting = false;

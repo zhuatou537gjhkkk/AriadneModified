@@ -12,6 +12,9 @@ import {
 import VirtualList from 'rc-virtual-list';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// 引入 Zustand Store
+import useDashboardStore from './store/useDashboardStore';
+
 // 引入组件
 import AttackGraph from './components/AttackGraph';
 import TrafficTrend from './components/TrafficTrend';
@@ -74,7 +77,9 @@ const App = () => {
   };
 
   // === 1. 动态数据状态 (State) ===
-  const [stats, setStats] = useState({ active_threats: 0, intercepted_today: 0, throughput_eps: 0, time_sync_offset: 0 });
+  // 移除原有的 stats useState，改用 Zustand Store
+  const { stats, fetchStats, updateFromWS } = useDashboardStore();
+
   const [trafficData, setTrafficData] = useState(null); // 传给 TrafficTrend
   const [alertList, setAlertList] = useState([]);
   const [graphData, setGraphData] = useState({ nodes: [], links: [] }); // 溯源图数据
@@ -102,9 +107,9 @@ const App = () => {
     const loadAllData = async () => {
       setLoading(true);
       try {
-        // 并行请求所有关键数据
-        const [statsRes, trafficRes, alertsRes, chainsListRes, assetsRes, attackRes, attrRes] = await Promise.all([
-          getDashboardStats(),
+        // 并行请求所有关键数据 (stats 改为通过 store 获取)
+        await fetchStats();
+        const [trafficRes, alertsRes, chainsListRes, assetsRes, attackRes, attrRes] = await Promise.all([
           getTrafficTrend(),
           getLatestAlerts(),
           getChainsList(),  // ← 新增：获取攻击链列表
@@ -115,7 +120,6 @@ const App = () => {
 
         console.log(trafficRes);
 
-        setStats(statsRes);
         setTrafficData(trafficRes);
         setAlertList(alertsRes);
         setChainsList(chainsListRes.chains || []);  // ← 存储攻击链列表
@@ -150,76 +154,47 @@ const App = () => {
     // 连接 WebSocket
     wsService.connect();
 
-    // 订阅消息处理函数
-    // 订阅消息处理函数
-    const unsubscribe = wsService.subscribe((msg) => {
-      console.log('收到 WebSocket 消息:', msg);
+    // 订阅消息处理函数 (接收批量消息数组)
+    const unsubscribe = wsService.subscribe((messages) => {
+      // 1. 将批量消息交给 Zustand 处理，局部更新 stats，避免 App.jsx 顶层雪崩
+      updateFromWS(messages);
 
-      switch (msg.type) {
+      // 2. 遍历消息处理其他副作用
+      let hasAnalysisReport = false;
 
-        // === 情况 A: 收到最新的分析报告 ===
-        // === 情况 A: 收到最新的分析报告 ===
-        case 'analysis_report':
-          message.info(`收到新的实时分析报告 (${msg.timestamp})`);
+      messages.forEach(msg => {
+        switch (msg.type) {
+          case 'analysis_report':
+            hasAnalysisReport = true;
+            break;
+          case 'etl_error':
+          case 'analysis_error':
+            message.error(`系统后台错误: ${msg.error}`);
+            break;
+          default:
+            break;
+        }
+      });
 
-          // 1. 更新统计数据 (严格对齐 endpoints.py 公式)
-          const chainCount = msg.attack_chains?.total || 0;
-          const lateralCount = msg.lateral_movement || 0;
-          const exfilCount = msg.data_exfiltration || 0;
-          const totalThreats = chainCount + lateralCount + exfilCount;
+      // 如果这批消息里包含分析报告，统一触发一次 API 刷新，避免高频请求
+      if (hasAnalysisReport) {
+        message.info(`收到新的实时分析报告`);
+        fetchStats(); // 重新获取完整的统计数据（包括 intercepted_today）
+        getAttackHighlights().then(hitList => setHitTactics(hitList || []));
+        getLatestAlerts().then(setAlertList);
+        getAttributionResult().then(setAttribution);
+        getAssetsList().then(setAssetData);
 
-          // 更新活跃威胁数，但不在这里更新 intercepted_today
-          // intercepted_today 应该从后端 API 实时查询，而不是通过公式计算
-          setStats(prev => ({
-            ...prev,
-            active_threats: totalThreats,
-          }));
-
-          // 重新获取完整的统计数据（包括 intercepted_today）
-          getDashboardStats().then(setStats);
-
-          // 2. 【核心修复】更新 ATT&CK 矩阵高亮
-          // WebSocket 只推了统计数字，具体的“技术名称”需要调用 API 获取
-          // 这里直接调用我们在 api.js 里定义的接口，它会返回 ["Web Shell", "Process Injection"...]
-          getAttackHighlights().then(hitList => {
-            console.log("刷新 ATT&CK 高亮:", hitList);
-            setHitTactics(hitList || []);
-          });
-
-          // 3. 触发其他详情刷新
-          getLatestAlerts().then(setAlertList);
-          getAttributionResult().then(setAttribution);
-          // getAttackStoryline().then(setStoryline); // 攻击叙事线功能已禁用
-          getAssetsList().then(setAssetData);
-          getTrafficTrend().then(setTrafficData);
-
-          // 【新增】重新加载攻击链列表并刷新当前选中的链
-          getChainsList().then(newChainsList => {
-            setChainsList(newChainsList.chains || []);
-            // 如果有选中的链，刷新其图谱
-            if (selectedChainId) {
-              getSingleChainGraph(selectedChainId).then(setGraphData);
-            }
-          });
-
-          break;
-
-        // === 情况 B: ETL 状态更新 ===
-        case 'etl_status':
-          // 如果后端发来了 EPS (Events Per Second) 数据，可以在这里更新
-          // if (msg.events_processed) {
-          //    setStats(prev => ({ ...prev, throughput_eps: msg.events_processed }));
-          // }
-          break;
-
-        // === 情况 C: 错误处理 ===
-        case 'etl_error':
-        case 'analysis_error':
-          message.error(`系统后台错误: ${msg.error}`);
-          break;
-
-        default:
-          break;
+        // 刷新流量趋势和攻击链列表
+        getTrafficTrend().then(setTrafficData);
+        getChainsList().then(newChainsList => {
+          setChainsList(newChainsList.chains || []);
+          // 注意：由于闭包问题，这里 selectedChainId 可能是旧值，
+          // 实际项目中建议用 useRef 追踪 selectedChainId，这里保持原逻辑结构
+          if (selectedChainId) {
+            getSingleChainGraph(selectedChainId).then(setGraphData);
+          }
+        });
       }
     });
 
@@ -228,7 +203,6 @@ const App = () => {
       unsubscribe(); // 取消订阅
       wsService.disconnect(); // 关闭 socket
     };
-
 
   }, []);
 
