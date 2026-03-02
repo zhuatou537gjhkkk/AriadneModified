@@ -1,5 +1,5 @@
 /* src/components/TrafficTrend.jsx */
-import React from 'react';
+import React, { memo } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 const TrafficTrend = ({ data }) => {
@@ -74,4 +74,4 @@ const TrafficTrend = ({ data }) => {
     return <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />;
 };
 
-export default TrafficTrend;
+export default memo(TrafficTrend);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { getTopologyData } from '../services/api';
 
@@ -149,8 +149,8 @@ const TopologyGraph = () => {
     }, []);
 
     // 处理后的节点和链接
-    const processedNodes = calculateNodePositions(topologyData.nodes);
-    const processedLinks = processLinks(topologyData.links);
+    const processedNodes = useMemo(() => calculateNodePositions(topologyData.nodes), [topologyData.nodes]);
+    const processedLinks = useMemo(() => processLinks(topologyData.links), [topologyData.links]);
 
     const option = {
         backgroundColor: 'transparent',
@@ -202,4 +202,4 @@ const TopologyGraph = () => {
     return <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />;
 };
 
-export default TopologyGraph;
+export default memo(TopologyGraph);
