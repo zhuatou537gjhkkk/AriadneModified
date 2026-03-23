@@ -15,11 +15,20 @@ from pathlib import Path
 # ZEEK_FILES_LOG = "/home/Ariadne/data/logs/zeek/files.log"
 
 # 日志文件路径（Windows本地测试用）
-WAZUH_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
-ZEEK_CONN_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\conn.log"
-ZEEK_DNS_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\dns.log"
-ZEEK_HTTP_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\http.log"
-ZEEK_FILES_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\files.log"
+# WAZUH_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\wazuh\\archives.json"
+# ZEEK_CONN_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\conn.log"
+# ZEEK_DNS_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\dns.log"
+# ZEEK_HTTP_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\http.log"
+# ZEEK_FILES_LOG = "D:\\Projects\\Python\\Courses\\Ariadne\\data\\logs\\zeek\\files.log"
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
+# 动态生成跨平台的日志文件路径
+WAZUH_LOG = str(BASE_DIR / "data" / "logs" / "wazuh" / "archives.json")
+ZEEK_CONN_LOG = str(BASE_DIR / "data" / "logs" / "zeek" / "conn.log")
+ZEEK_DNS_LOG = str(BASE_DIR / "data" / "logs" / "zeek" / "dns.log")
+ZEEK_HTTP_LOG = str(BASE_DIR / "data" / "logs" / "zeek" / "http.log")
+ZEEK_FILES_LOG = str(BASE_DIR / "data" / "logs" / "zeek" / "files.log")
 
 # 攻击场景状态跟踪
 attack_state = {
