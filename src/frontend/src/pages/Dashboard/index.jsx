@@ -11,7 +11,8 @@ import { getTrafficTrend, getLatestAlerts } from '../../services/api';
 const EntropyChart = React.lazy(() => import('../../components/EntropyChart'));
 
 const Dashboard = () => {
-    const { stats, refreshKey } = useDashboardStore();
+    const stats = useDashboardStore(state => state.stats);
+    const refreshKey = useDashboardStore(state => state.refreshKey);
     const [trafficData, setTrafficData] = useState(null);
     const [alertList, setAlertList] = useState([]);
     const [analysisVisible, setAnalysisVisible] = useState(false);

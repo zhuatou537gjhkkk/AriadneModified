@@ -4,7 +4,7 @@ import { getAttributionResult } from '../../services/api';
 import useDashboardStore from '../../store/useDashboardStore';
 
 const Attribution = () => {
-    const { refreshKey } = useDashboardStore();
+    const refreshKey = useDashboardStore(state => state.refreshKey);
     const [attribution, setAttribution] = useState({ name: 'Unknown', code: '???', confidence: 0, evidence: [] });
 
     useEffect(() => {

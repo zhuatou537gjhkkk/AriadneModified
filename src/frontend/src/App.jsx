@@ -5,7 +5,7 @@ import wsService from './services/websocket';
 import { Layout, Menu, ConfigProvider, theme, message, Spin } from 'antd';
 import {
   DashboardOutlined, DeploymentUnitOutlined, TableOutlined, ClusterOutlined,
-  SafetyCertificateOutlined, WarningOutlined, DoubleLeftOutlined, DoubleRightOutlined,BugOutlined
+  SafetyCertificateOutlined, WarningOutlined, DoubleLeftOutlined, DoubleRightOutlined, BugOutlined
 } from '@ant-design/icons';
 
 import ErrorBoundary from './components/ErrorBoundary';
@@ -44,12 +44,14 @@ const viewTitles = {
 const AppContent = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 
-  const { fetchStats, updateFromWS, triggerRefresh } = useDashboardStore();
+  const fetchStats = useDashboardStore(state => state.fetchStats);
+  const updateFromWS = useDashboardStore(state => state.updateFromWS);
+  const triggerRefresh = useDashboardStore(state => state.triggerRefresh);
 
   useEffect(() => {
     fetchStats();

@@ -6,7 +6,7 @@ import { getChainsList, getSingleChainGraph } from '../../services/api';
 import useDashboardStore from '../../store/useDashboardStore';
 
 const Investigation = () => {
-    const { refreshKey } = useDashboardStore();
+    const refreshKey = useDashboardStore(state => state.refreshKey);
     const [chainsList, setChainsList] = useState([]);
     const [selectedChainId, setSelectedChainId] = useState(null);
     const [graphData, setGraphData] = useState({ nodes: [], links: [] });

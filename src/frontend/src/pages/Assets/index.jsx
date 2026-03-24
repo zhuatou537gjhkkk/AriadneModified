@@ -5,7 +5,7 @@ import { getAssetsList } from '../../services/api';
 import useDashboardStore from '../../store/useDashboardStore';
 
 const Assets = () => {
-    const { refreshKey } = useDashboardStore();
+    const refreshKey = useDashboardStore(state => state.refreshKey);
     const [assetData, setAssetData] = useState([]);
 
     useEffect(() => {

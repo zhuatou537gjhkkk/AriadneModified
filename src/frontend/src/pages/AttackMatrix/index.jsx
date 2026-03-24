@@ -20,7 +20,7 @@ const attackMatrix = {
 };
 
 const AttackMatrix = () => {
-    const { refreshKey } = useDashboardStore();
+    const refreshKey = useDashboardStore(state => state.refreshKey);
     const [hitTactics, setHitTactics] = useState([]);
     const navigate = useNavigate();
 
