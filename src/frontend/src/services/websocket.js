@@ -9,8 +9,9 @@ class WebSocketService {
         this.ws = null;
         this.listeners = [];
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.reconnectTimeout = 3000;
+        this.maxReconnectAttempts = 50;
+        this.baseReconnectDelay = 2000;
+        this.maxReconnectDelay = 30000;
         this.isConnecting = false;
 
         // 1. 心跳保活机制 (Heartbeat)
@@ -134,8 +135,18 @@ class WebSocketService {
 
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`[WebSocket] Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-            setTimeout(() => this.connect(), this.reconnectTimeout);
+
+            // 指数退避计算
+            let backoffDelay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+            // 封顶限制
+            backoffDelay = Math.min(backoffDelay, this.maxReconnectDelay);
+            // 随机抖动 (0 - 1000ms)
+            const jitter = Math.floor(Math.random() * 1000);
+            // 最终延时
+            const finalDelay = backoffDelay + jitter;
+
+            console.log(`[WebSocket] Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts}), waiting for ${finalDelay}ms`);
+            setTimeout(() => this.connect(), finalDelay);
         }
     }
 
