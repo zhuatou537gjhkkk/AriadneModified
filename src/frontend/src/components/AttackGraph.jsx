@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
+import useChartResize from '../hooks/useChartResize';
 
 // 防御 XSS：HTML 实体转义工具函数
 const escapeHTML = (str) => {
@@ -14,9 +15,10 @@ const escapeHTML = (str) => {
 
 // 接收 graphData (来自父组件的动态数据)
 const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
-    const [isReady, setIsReady] = useState(false);
     const containerRef = useRef(null);
     const echartRef = useRef(null);
+
+    useChartResize(echartRef, containerRef, 200);
 
     // 默认空数据防止报错
     const safeData = graphData || { nodes: [], links: [] };
@@ -73,42 +75,6 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
             };
         });
     }, [safeData.links, highlightNodes]);
-
-    useEffect(() => {
-        if (!containerRef.current) return;
-
-        let resizeObserver;
-        try {
-            resizeObserver = new ResizeObserver((entries) => {
-                for (let entry of entries) {
-                    const { width, height } = entry.contentRect;
-                    if (width > 0 && height > 0) {
-                        setIsReady(true);
-                        if (echartRef.current) {
-                            const echartsInstance = echartRef.current.getEchartsInstance();
-                            if (echartsInstance) {
-                                echartsInstance.resize();
-                            }
-                        }
-                    }
-                }
-            });
-            resizeObserver.observe(containerRef.current);
-        } catch (error) {
-            console.warn('ResizeObserver not supported:', error);
-            setIsReady(true);
-        }
-
-        return () => {
-            if (resizeObserver) {
-                try {
-                    resizeObserver.disconnect();
-                } catch (error) {
-                    console.warn('Error disconnecting ResizeObserver:', error);
-                }
-            }
-        };
-    }, []);
 
     const onEvents = {
         'click': (params) => {
@@ -216,16 +182,14 @@ const AttackGraph = ({ onNodeClick, highlightNodes = [], graphData }) => {
 
     return (
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-            {isReady && (
-                <ReactECharts
-                    ref={echartRef}
-                    option={option}
-                    notMerge={false}     // 开启增量更新
-                    lazyUpdate={true}    // 开启延迟更新，提升高频渲染性能
-                    style={{ height: '100%', width: '100%' }}
-                    onEvents={onEvents}
-                />
-            )}
+            <ReactECharts
+                ref={echartRef}
+                option={option}
+                notMerge={false}     // 开启增量更新
+                lazyUpdate={true}    // 开启延迟更新，提升高频渲染性能
+                style={{ height: '100%', width: '100%' }}
+                onEvents={onEvents}
+            />
         </div>
     );
 };

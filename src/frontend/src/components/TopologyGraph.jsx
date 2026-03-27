@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { getTopologyData } from '../services/api';
+import useChartResize from '../hooks/useChartResize';
 
 const TopologyGraph = () => {
     const [topologyData, setTopologyData] = useState({ nodes: [], links: [] });
     const [loading, setLoading] = useState(true);
+
+    const containerRef = useRef(null);
+    const echartRef = useRef(null);
+
+    useChartResize(echartRef, containerRef);
 
     // 定义节点分类对应的样式
     const categoryStyles = {
@@ -199,7 +205,11 @@ const TopologyGraph = () => {
         return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>加载中...</div>;
     }
 
-    return <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />;
+    return (
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+            <ReactECharts ref={echartRef} option={option} style={{ height: '100%', width: '100%' }} />
+        </div>
+    );
 };
 
 export default memo(TopologyGraph);

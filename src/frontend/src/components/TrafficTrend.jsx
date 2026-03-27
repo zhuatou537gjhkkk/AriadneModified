@@ -1,8 +1,14 @@
 /* src/components/TrafficTrend.jsx */
-import React, { memo } from 'react';
+import React, { memo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
+import useChartResize from '../hooks/useChartResize';
 
 const TrafficTrend = ({ data }) => {
+    const containerRef = useRef(null);
+    const echartRef = useRef(null);
+
+    useChartResize(echartRef, containerRef);
+
     // === 修复核心逻辑 START ===
     // 即使 data 是 {} (空对象)，我们也通过解构赋值给它强行加上默认值
     const {
@@ -71,7 +77,11 @@ const TrafficTrend = ({ data }) => {
         ]
     };
 
-    return <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />;
+    return (
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+            <ReactECharts ref={echartRef} option={option} style={{ height: '100%', width: '100%' }} />
+        </div>
+    );
 };
 
 export default memo(TrafficTrend);

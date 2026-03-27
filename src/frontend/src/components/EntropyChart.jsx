@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
+import useChartResize from '../hooks/useChartResize';
 
 const EntropyChart = () => {
+    const containerRef = useRef(null);
+    const echartRef = useRef(null);
+
+    useChartResize(echartRef, containerRef);
+
     const option = {
         backgroundColor: 'transparent',
         tooltip: {
@@ -48,7 +54,11 @@ const EntropyChart = () => {
         ]
     };
 
-    return <ReactECharts option={option} style={{ height: '200px', width: '100%' }} />;
+    return (
+        <div ref={containerRef} style={{ width: '100%', height: '200px' }}>
+            <ReactECharts ref={echartRef} option={option} style={{ height: '100%', width: '100%' }} />
+        </div>
+    );
 };
 
 export default EntropyChart;
